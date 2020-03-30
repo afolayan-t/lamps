@@ -2,6 +2,7 @@ import numpy as npo
 from lamp import lamp,Food
 import pygame
 import time
+import matplotlib.pyplot as plt
 
 # Establish size of environment window#
 boxWidth = 1000
@@ -14,8 +15,8 @@ green = (0, 255, 0)
 blue = (0, 0, 128) 
 red = (255, 0, 0)
 # number of lamps in our colony
-numLamps = 250
-numFoods = 50
+numLamps = 100
+numFoods = 25
 # sets the title for the window
 pygame.display.set_caption('Environment') 
 
@@ -75,7 +76,13 @@ def main():
         food_colony.append(food_i)
         renderFood(food_colony[j], screen)
         
-    running = True
+
+    num_lamps_alive = numLamps
+    initial_time = time.time()
+    lamps_alive  = []
+    times  = []
+    
+    running = True    
     while running:
         # reset screen color to white
         screen.fill([255,255,255])
@@ -91,6 +98,12 @@ def main():
                             lamp_colony[i].energy += 50
             if lamp_colony[i].energy <= 0:
                 dead_lamps.append(lamp_colony[i])
+
+                # for plotting purposes
+                num_lamps_alive -= 1 
+                lamps_alive.append(num_lamps_alive)
+                now = time.time()
+                times.append(now-initial_time)
                 
         for lamp_ in dead_lamps:
                 lamp_colony.remove(lamp_)
@@ -109,8 +122,9 @@ def main():
 
 
     pygame.display.quit() # quit the GUI
-        
 
+    plt.plot(times, lamps_alive)
+    plt.show()
 
   
 if __name__== "__main__":
