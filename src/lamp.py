@@ -1,5 +1,5 @@
 import numpy as np
-import pygame
+
 
 boxWidth = 1000
 boxHeight = 800
