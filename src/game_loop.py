@@ -1,4 +1,4 @@
-import numpy as npo
+import numpy as np
 from lamp import lamp,Food
 import pygame
 import time
@@ -15,12 +15,20 @@ green = (0, 255, 0)
 blue = (0, 0, 128) 
 red = (255, 0, 0)
 # number of lamps in our colony
-numLamps = 100
-numFoods = 25
+numLamps = 120
+numFoods = 27
 # sets the title for the window
-pygame.display.set_caption('Environment') 
+pygame.display.set_caption('Environment')
 
+lamp_colony = []
+food_colony  = []
 
+def lampSex(lamp_parent):
+    x_ = lamp_parent.position[0]
+    y_ = lamp_parent.position[1]
+    lamp_baby = lamp(red, x=x_+2, y=y_+2)
+    lamp_colony.append(lamp_baby)
+        
 def renderLamp(lamp, display):
         """
         A function for rendering a lamp on the screen
@@ -62,15 +70,13 @@ def main():
     background = pygame.Surface((boxWidth, boxHeight))
     screen.fill(pygame.Color(white))
 
-    lamp_colony = []
-    greens = 0
-    reds = 0
+    
     for i in range(numLamps):
         lamp_i  = lamp(red)
         lamp_colony.append(lamp_i)
         renderLamp(lamp_colony[i], screen)
 
-    food_colony = []
+    
     for j in range(numFoods):
         food_i = Food(10, 10)
         food_colony.append(food_i)
@@ -94,8 +100,22 @@ def main():
             for j in range(len(food_colony)):
                     renderFood(food_colony[j], screen)
                     if isCollision(lamp_colony[i], food_colony[j]):
-                            food_colony[j].respawn()
-                            lamp_colony[i].energy += 50
+
+                        if lamp_colony[i].energy >= lamp_colony[i].maxEnergy:
+                            lamp_colony[i].energy = lamp_colony[i].maxEnergy
+
+                        if lamp_colony[i].energy >= .8*lamp_colony[i].maxEnergy:
+                            lamp_colony[i].energy *= .5
+                            lampSex(lamp_colony[i])
+
+                            num_lamps_alive += 1
+                            lamps_alive.append(num_lamps_alive)
+                            now = time.time()
+                            times.append(now-initial_time)
+                            
+                        food_colony[j].respawn()
+                        lamp_colony[i].energy += 50
+                        
             if lamp_colony[i].energy <= 0:
                 dead_lamps.append(lamp_colony[i])
 
