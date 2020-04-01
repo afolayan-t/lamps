@@ -1,15 +1,16 @@
 import numpy as np
-
-
 boxWidth = 1000
 boxHeight = 800
 green = (0, 255, 0)
 blue = (0, 0, 128)
+red = (255, 0, 0)
 
 # create lamp class which will be our creatures
 class lamp:
-    def __init__(self, color, x=None, y=None):
-        self.max_velocity = 3
+    def __init__(self, color=red, x=None, y=None, max_velo=3,
+                 length=3, height=9):
+        
+        self.max_velocity = max_velo
 
         if x == None:
             x_ = np.random.randint(0, boxWidth)
@@ -20,6 +21,7 @@ class lamp:
         else:
             y_ = y
         pos = [x_,y_]
+        
         self.position = np.array(pos)
         
         xDot = np.random.randint(-1, 2)
@@ -28,9 +30,10 @@ class lamp:
         self.velocity = np.array(vel)
         
         self.color = color
-        self.height = 9
-        self.length = 3
 
+        self.length = length
+        self.height = height
+        
         self.maxEnergy = self.length*self.height*5
         self.energy = self.maxEnergy/2
         
@@ -45,16 +48,17 @@ class lamp:
         self.position += self.velocity
 
         self.energy -= np.linalg.norm(self.velocity)/20
-        #if self.energy < 0:
-         #   print("YOU'RE DEAD, e = ", self.energy)
+
+
 
 class Food:
-    def __init__(self, heig, leng):
+    def __init__(self, x, y, height=10, length=10):
         x = np.random.randint(0, boxWidth)
         y = np.random.randint(0, boxHeight)
         self.position = (x,y)
-        self.height = heig
-        self.length = leng
+        self.height = height
+        self.length = length
+        self.energy = self.height*self.length/2
 
     def respawn(self):
         x = np.random.randint(boxWidth/2, boxWidth)
