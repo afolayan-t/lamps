@@ -52,16 +52,24 @@ class lamp:
 
 
 class Food:
-    def __init__(self, x, y, height=10, length=10):
-        x = np.random.randint(0, boxWidth)
-        y = np.random.randint(0, boxHeight)
-        self.position = (x,y)
+    def __init__(self, x=None, y=None, height=10, length=10):
+
+        if x == None:
+            x_ = np.random.randint(0, boxWidth)
+        else:
+            x_ = x
+        if y == None:
+            y_ = np.random.randint(0, boxHeight)
+        else:
+            y_ = y
+
+        self.position = (x_,y_)
         self.height = height
         self.length = length
         self.energy = self.height*self.length/2
 
     def respawn(self):
         x = np.random.randint(boxWidth/2, boxWidth)
-        y = np.random.randint(boxHeight/2, boxHeight)
+        y = np.random.randint(0, boxHeight)
         self.position = (x,y)
         

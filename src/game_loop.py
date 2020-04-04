@@ -1,8 +1,9 @@
 import numpy as np
 from lamp import lamp,Food
-import pygame
 import time
 import matplotlib.pyplot as plt
+import sys
+
 
 # Establish size of environment window#
 boxWidth = 1000
@@ -14,30 +15,62 @@ white = (255, 255, 255)
 green = (0, 255, 0) 
 blue = (0, 0, 128) 
 red = (255, 0, 0)
-# number of lamps in our colony
-numLamps = 300
-numFoods = 15
 
-# intialize screen object 
-screen = pygame.display.set_mode((boxWidth, boxHeight))
-background = pygame.Surface((boxWidth, boxHeight))
-screen.fill(pygame.Color(white))
 
-# sets the title for the window
-pygame.display.set_caption('Environment')
 
+try:
+    numLamps = int(sys.argv[1])
+    numFoods = int(sys.argv[2])
+    foodResupply = int(sys.argv[3])
+except:
+    # number of lamps in our colony
+    numLamps = int(input("number of lamps? "))
+    numFoods = int(input("number of foods? "))
+    foodResupply = int(input("number of foods per respawn? "))
+
+use_pygame = input("Use pygame?? (y/n) ")
+while use_pygame != "y" and use_pygame != "n":
+    print("must reply 'y' or 'n'")
+    use_pygame = input("Use pygame?? (y/n):\n")
+
+if use_pygame == 'y':
+    RUN_PYGAME = True
+else:
+    RUN_PYGAME = False
+
+    
+if RUN_PYGAME:
+    import pygame
+    # intialize screen object 
+    screen = pygame.display.set_mode((boxWidth, boxHeight))
+    background = pygame.Surface((boxWidth, boxHeight))
+    screen.fill(pygame.Color(white))
+    
+    # sets the title for the window
+    pygame.display.set_caption('Environment')
+
+    pygame.init()
+    
 lamp_colony = []
 food_colony  = []
 
+
+def dumpFoods(n):
+    for i in range(n):
+        food_i = Food()
+        food_colony.append(food_i)
+        if RUN_PYGAME:
+            renderFood(food_i)
+        
 def lampSex(parent):
     x_ = parent.position[0]
     y_ = parent.position[1]
     velo_buff = 0
     length_buff = 0
     if parent.color == green:
-        velo_buff =  np.random.uniform(low=-parent.max_velocity/10, high=parent.max_velocity/10)
+        velo_buff =  np.random.uniform(low=-parent.max_velocity/3, high=parent.max_velocity/3)
         length_buff = np.random.randint(low=-2, high=3)
-
+        
     baby = lamp(color=parent.color,
                 x=x_+2, y=y_+2,
                 max_velo=parent.max_velocity+velo_buff,
@@ -46,7 +79,8 @@ def lampSex(parent):
 
     if baby.length <= 0:
         baby.length = 1
-        
+    if baby.max_velocity <= 0:
+        baby.max_velocity = parent.max_velocity
     lamp_colony.append(baby)
     return baby
         
@@ -61,10 +95,10 @@ def renderLamp(lamp):
         h = lamp.height
         pygame.draw.rect(screen, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
 
-def renderFood(food, display):
+def renderFood(food):
         h = food.height
         l = food.length
-        pygame.draw.rect(display, blue, (food.position[0], food.position[1], l,h), 0)
+        pygame.draw.rect(screen, blue, (food.position[0], food.position[1], l,h), 0)
 
 def isCollision(obj1, obj2):
     (x1, y1) = obj1.position
@@ -85,23 +119,22 @@ def endGame(display_):
 def init_lamps():
     for i in range(numLamps):
         if i % 2 == 0:
-            lamp_i = lamp(red)
-        else:
             lamp_i = lamp(green)
+        else:
+            lamp_i = lamp(red)
         lamp_colony.append(lamp_i)
-        renderLamp(lamp_colony[i])#, screen)
+        if RUN_PYGAME:
+            renderLamp(lamp_colony[i])
 
 def init_foods():
     for j in range(numFoods):
-        food_i = Food(10, 10)
+        food_i = Food()
         food_colony.append(food_i)
-        renderFood(food_colony[j], screen)
+        if RUN_PYGAME:
+            renderFood(food_colony[j])
 
 
 def main():
-
-    pygame.init()
-
 
     init_lamps()
     init_foods()
@@ -118,29 +151,38 @@ def main():
     num_reds = numLamps/2
     reds_alive = []
     red_times = []
-    
-    running = True    
-    while running:
-        # reset screen color to white
-        screen.fill([255,255,255])
-        
-        dead_lamps = []
-        dead_greens = []
-        dead_reads = []
-        for i in range(len(lamp_colony)):
-            lamp_colony[i].move()
-            renderLamp(lamp_colony[i])#, screen)
-            for j in range(len(food_colony)):
-                    renderFood(food_colony[j], screen)
-                    if isCollision(lamp_colony[i], food_colony[j]):
 
+    num_iterations = 0
+    running = True
+    try:
+        while running:
+            # reset screen color to white
+            if RUN_PYGAME:
+                screen.fill([255,255,255])
+    
+            dead_lamps = []
+            dead_greens = []
+            dead_reads = []
+            # iterate through the lamps
+            for i in range(len(lamp_colony)):
+                if RUN_PYGAME:
+                    renderLamp(lamp_colony[i])
+                # update position of lamp
+                lamp_colony[i].move()
+                eaten_foods = []
+                # iterate through the foods (we should see if we can avoid O(n*m) here)
+                for j in range(len(food_colony)):
+                    if RUN_PYGAME:
+                        renderFood(food_colony[j])
+                    if isCollision(lamp_colony[i], food_colony[j]):
+    
                         if lamp_colony[i].energy >= lamp_colony[i].maxEnergy:
                             lamp_colony[i].energy = lamp_colony[i].maxEnergy
 
                         if lamp_colony[i].energy >= .8*lamp_colony[i].maxEnergy:
                             lamp_colony[i].energy *= .5
                             baby = lampSex(lamp_colony[i])
-
+    
                             num_lamps_alive += 1
                             lamps_alive.append(num_lamps_alive)
                             now = time.time()
@@ -153,51 +195,79 @@ def main():
                                 num_reds += 1
                                 reds_alive.append(num_reds)
                                 red_times.append(now-initial_time)
-                                
+                                    
                         lamp_colony[i].energy += food_colony[j].energy
-                        food_colony[j].respawn()
-                                
-
-                        
-            if lamp_colony[i].energy <= 0:
-                dead_lamps.append(lamp_colony[i])
-
-                # for plotting purposes
-                num_lamps_alive -= 1
-                lamps_alive.append(num_lamps_alive)
-                now = time.time()
-                times.append(now-initial_time)
-
-                if lamp_colony[i].color == green:
-                    num_greens -= 1
-                    greens_alive.append(num_greens)
-                    green_times.append(now-initial_time)
-                elif lamp_colony[i].color == red:
-                    num_reds -= 1
-                    reds_alive.append(num_reds)
-                    red_times.append(now-initial_time)
-                
-        for lamp_ in dead_lamps:
+                        eaten_foods.append(food_colony[j])        
+    
+                for food_ in eaten_foods:
+                    food_colony.remove(food_)
+     
+                            
+                if lamp_colony[i].energy <= 0:
+                    dead_lamps.append(lamp_colony[i])
+    
+                    # for plotting purposes
+                    num_lamps_alive -= 1
+                    lamps_alive.append(num_lamps_alive)
+                    now = time.time()
+                    times.append(now-initial_time)
+    
+                    if lamp_colony[i].color == green:
+                        num_greens -= 1
+                        greens_alive.append(num_greens)
+                        green_times.append(now-initial_time)
+                    elif lamp_colony[i].color == red:
+                        num_reds -= 1
+                        reds_alive.append(num_reds)
+                        red_times.append(now-initial_time)
+                    
+            for lamp_ in dead_lamps:
                 lamp_colony.remove(lamp_)
-
-        # if we click 'X' on the screen, stop rendering the screen
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+    
+            if RUN_PYGAME:
+                # if we click 'X' on the screen, stop rendering the screen
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+    
+    
+            if len(lamp_colony) == 0:
+                if RUN_PYGAME:
+                    endGame(screen)
                 running = False
+    
+            num_iterations += 1
+            if num_iterations == 400:
+                dumpFoods(foodResupply)
+                num_iterations = 0
+    
+            if RUN_PYGAME:
+                pygame.display.update()
+    except KeyboardInterrupt:
+        print('interrupted!')
 
-        if len(lamp_colony) == 0:
-            endGame(screen)
-            running = False            
-        pygame.display.update()
-        # pause the window so the graphics update
-#        time.sleep(timeStep/8)
+    if RUN_PYGAME:
+        pygame.display.quit() # quit the GUI
 
-
-    pygame.display.quit() # quit the GUI
-
+    if num_greens > 0:
+        avg_len_gr = 0
+        avg_max_v_gr = 0
+        for gr in lamp_colony:
+            if gr.color == green:
+                avg_len_gr += gr.length
+                avg_max_v_gr += gr.max_velocity
+            
+        avg_len_gr /= num_greens
+        avg_max_v_gr /= num_greens
+        
+        print("avg length of greens: ", avg_len_gr)
+        print("avg top speed of greens: ", avg_max_v_gr)
+        
     plt.plot(times, lamps_alive)
     plt.plot(green_times, greens_alive, color='green')
     plt.plot(red_times, reds_alive, color='red')
+    plt.xlabel("time (s)")
+    plt.ylabel("lamps")
     plt.show()
 
   
