@@ -15,7 +15,7 @@ green = (0, 255, 0)
 blue = (0, 0, 128) 
 red = (255, 0, 0)
 # number of lamps in our colony
-numLamps = 120
+numLamps = 20
 numFoods = 27
 # sets the title for the window
 pygame.display.set_caption('Environment')
@@ -38,7 +38,11 @@ def renderLamp(lamp, display):
         """
         l = lamp.length
         h = lamp.height
-        pygame.draw.rect(display, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
+        try:
+            pygame.draw.polygon(display, lamp.color, lamp.verticies)
+        except:
+            print(lamp.verticies)
+        # pygame.draw.rect(display, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
 
 def renderFood(food, display):
         h = food.height
@@ -68,7 +72,7 @@ def main():
     # intialize screen object 
     screen = pygame.display.set_mode((boxWidth, boxHeight))
     background = pygame.Surface((boxWidth, boxHeight))
-    screen.fill(pygame.Color(white))
+    screen.fill(white)
 
     
     for i in range(numLamps):
