@@ -93,7 +93,10 @@ def renderLamp(lamp):
         """
         l = lamp.length
         h = lamp.height
-        pygame.draw.rect(screen, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
+
+        
+        pygame.draw.polygon(screen, lamp.color, lamp.vertices)
+#        pygame.draw.rect(screen, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
 
 def renderFood(food):
         h = food.height
@@ -101,11 +104,26 @@ def renderFood(food):
         pygame.draw.rect(screen, blue, (food.position[0], food.position[1], l,h), 0)
 
 def isCollision(obj1, obj2):
-    (x1, y1) = obj1.position
+   #(x1, y1) = obj1.position
     (x2, y2) = obj2.position
-    if(x1 >= x2 and x1 <= x2+obj2.length) or (x1+obj1.length >= x2 and x1+obj1.length <= x2+obj2.length):
-        if(y1 >= y2 and y1 <= y2+obj2.height) or (y1+obj1.height >= y2 and y1+obj1.height <= y2+obj2.height):
-            return True
+
+    try:
+        subVerts = obj1.vertices[0:4]
+    except:
+        print("object 1 must be a lamp")
+
+    for i in range(len(subVerts)):
+        x1 = subVerts[i][0]
+        y1 = subVerts[i][1]
+
+        if (x1 >= x2 and x1 <= x2+obj2.length):
+            if(y1 >= y2 and y1 <= y2+obj2.height):
+                return True
+    
+    ### Code for if lamp is rectangle: ###
+#    if(x1 >= x2 and x1 <= x2+obj2.length) or (x1+obj1.length >= x2 and x1+obj1.length <= x2+obj2.length):
+ #       if(y1 >= y2 and y1 <= y2+obj2.height) or (y1+obj1.height >= y2 and y1+obj1.height <= y2+obj2.height):
+  #          return True
     return False
 
 def endGame(display_):
@@ -243,8 +261,15 @@ def main():
     
             if RUN_PYGAME:
                 pygame.display.update()
+
+#            time.sleep(.2)
     except KeyboardInterrupt:
         print('interrupted!')
+
+
+
+
+        
 
     if RUN_PYGAME:
         pygame.display.quit() # quit the GUI
