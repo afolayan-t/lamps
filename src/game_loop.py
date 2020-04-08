@@ -3,7 +3,7 @@ from lamp import lamp,Food
 import time
 import matplotlib.pyplot as plt
 import sys
-
+import datetime
 
 # Establish size of environment window#
 boxWidth = 1000
@@ -177,6 +177,12 @@ def main():
 
     num_iterations = 0
     running = True
+
+    stats_file = open("stats.txt", "a")
+    date_time = datetime.datetime.now()
+    stats_file.write("Start of simulation\n")
+    stats_file.write(str(date_time)+"\n")
+    stats_file.write("greens: " + str(num_greens) + " reds: " + str(num_reds) + "\n")
     try:
         while running:
             # reset screen color to white
@@ -299,7 +305,8 @@ def main():
     plt.xlabel("time (s)")
     plt.ylabel("lamps")
     plt.show()
-
+    stats_file.write("\n\n")
+    stats_file.close()
   
 if __name__== "__main__":
   main()
