@@ -15,14 +15,6 @@ white = (255, 255, 255)
 green = (0, 255, 0) 
 blue = (0, 0, 128) 
 red = (255, 0, 0)
-<<<<<<< HEAD
-# number of lamps in our colony
-numLamps = 20
-numFoods = 27
-# sets the title for the window
-pygame.display.set_caption('Environment')
-=======
->>>>>>> 03bb1569bebc5d5561f09f5bc728e3cd5cf36523
 
 
 
@@ -52,7 +44,7 @@ if RUN_PYGAME:
     # intialize screen object 
     screen = pygame.display.set_mode((boxWidth, boxHeight))
     background = pygame.Surface((boxWidth, boxHeight))
-    screen.fill(pygame.Color(white))
+    screen.fill(white)
     
     # sets the title for the window
     pygame.display.set_caption('Environment')
@@ -101,14 +93,6 @@ def renderLamp(lamp):
         """
         l = lamp.length
         h = lamp.height
-<<<<<<< HEAD
-        # try:
-        #     pygame.draw.polygon(display, lamp.color, lamp.verticies)
-        # except:
-        #     print(lamp.verticies)
-        pygame.draw.rect(display, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
-=======
->>>>>>> 03bb1569bebc5d5561f09f5bc728e3cd5cf36523
 
         
         pygame.draw.polygon(screen, lamp.color, lamp.vertices)
@@ -150,20 +134,7 @@ def endGame(display_):
     pygame.display.update()
     time.sleep(3)
 
-<<<<<<< HEAD
-
-def main():
-
-    pygame.init()
-    # intialize screen object 
-    screen = pygame.display.set_mode((boxWidth, boxHeight))
-    background = pygame.Surface((boxWidth, boxHeight))
-    screen.fill(white)
-
-    
-=======
 def init_lamps():
->>>>>>> 03bb1569bebc5d5561f09f5bc728e3cd5cf36523
     for i in range(numLamps):
         if i % 2 == 0:
             lamp_i = lamp(green)
