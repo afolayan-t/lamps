@@ -95,7 +95,7 @@ class lamp:
 
         self.energy -= np.linalg.norm(self.velocity)/20
         # rotate the lamp so it can be rendered
-        self.rotate(oldVel)
+        #self.rotate(oldVel)
         #if self.energy < 0:
          #   print("YOU'RE DEAD, e = ", self.energy)
 

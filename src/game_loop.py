@@ -38,11 +38,11 @@ def renderLamp(lamp, display):
         """
         l = lamp.length
         h = lamp.height
-        try:
-            pygame.draw.polygon(display, lamp.color, lamp.verticies)
-        except:
-            print(lamp.verticies)
-        # pygame.draw.rect(display, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
+        # try:
+        #     pygame.draw.polygon(display, lamp.color, lamp.verticies)
+        # except:
+        #     print(lamp.verticies)
+        pygame.draw.rect(display, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
 
 def renderFood(food, display):
         h = food.height
