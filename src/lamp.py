@@ -5,12 +5,12 @@ green = (0, 255, 0)
 blue = (0, 0, 128)
 red = (255,0, 0)
 
-dt = 1 # Time Step
+dt = .5 # Time Step
 
 # create lamp class which will be our creatures
 class lamp:
     def __init__(self, color=red, x=None, y=None, max_velo=3,
-                 length=15, height=12):
+                 length=30, height=25):
         
         self.max_velocity = max_velo
 
@@ -60,51 +60,41 @@ class lamp:
 
 
         ### Make verticies such that they are around the origin of the lamp
-        self.vertices = np.add(self.vertices, -self.position)
         self.position = self.position + self.velocity*dt
 
         ## rotate the lamp
-        self.rotate(oldVelocity)
-        ## Re-add position to the vertices so that they're at the location of the lamp
-        self.vertices = np.add(self.vertices, self.position)
+        self.rotate()
 
 
 
 
 
-    def rotate(self, oldVel):
+    def rotate(self):
         # (1) Get unit vector of the velocity for direction
         # (2) Get the rotation matrix
 
 
         # GET UNIT VECTOR
         magV = np.linalg.norm(self.velocity)
-        magOldVel = np.linalg.norm(oldVel)
-        if self.velocity.all() == oldVel.all():
-            angle = 0
-        elif (magV == 0) or (magOldVel == 0):
-            print("one of vels has 0 mag")
-            angle = 0
-        elif np.dot(oldVel, self.velocity)/(magV*magOldVel) > 1:
-            print("ROUNDING ERROR!!!!!!!")
-            angle = 0
-
-        else:
-            third_component = oldVel[0]*self.velocity[1] - oldVel[1]*self.velocity[0]
+        
+        # IF THERE IS NO VELOCITY VECTOR THEN WE DON'T ROTATE
+        if (magV > 0):
+            xAxis = np.array([1 ,0])
+            dotProd = np.dot(self.velocity, xAxis)
+            third_component = -self.velocity[1] # cross prod with unit vector
             
-            angle =  np.arccos(np.dot(oldVel, self.velocity)/(magV*magOldVel))
-            
-            if third_component < 0:
+            angle =  np.arccos(np.dot(xAxis, self.velocity)/(magV))
+            # this comes from the cross product to see if w rotate clwwise or cnt clckwise
+            if third_component > 0:
                 angle *= -1
-
-
-
-
-        ### Create rotation matrix
-        rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
-
-        self.vertices = np.transpose(np.matmul(rotationMatrix, np.transpose(self.vertices)))
-
+            print("velocity: ", self.velocity)
+            print("Dot Product:", dotProd)
+            print("Angle: ", angle)
+            ### Create rotation matrix
+            rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+            self.vertices = np.transpose(np.matmul(rotationMatrix, np.transpose(self._vertices)))
+            # put the vertices where the lamp is
+            self.vertices = self.vertices + self.position
         
 
     def setVertices(self):
@@ -123,8 +113,12 @@ class lamp:
         c = shadeHeight*self.length     # the widthof the shade
         e = (1-shadeHeight)*self.length # height of pole
         vertices = np.array([[a,0], [c/2, c], [-c/2, c], [-a,0], [-sliver, 0], [-sliver, -e], [-c/4, -e], [-c/4, -e-sliver], [c/4, -e-sliver], [c/4, -e], [sliver, -e], [sliver,0]])
-        self.vertices = np.add(vertices, self.position)
+        angle = -np.pi/2
 
+        rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+        vertices = np.transpose(np.matmul(rotationMatrix, np.transpose(vertices)))
+        self.vertices = np.add(vertices, self.position)
+        self._vertices = vertices
 
 class Food:
     def __init__(self, x=None, y=None, height=10, length=10):

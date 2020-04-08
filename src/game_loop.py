@@ -15,6 +15,7 @@ white = (255, 255, 255)
 green = (0, 255, 0) 
 blue = (0, 0, 128) 
 red = (255, 0, 0)
+black = (0,0,0)
 
 
 
@@ -94,8 +95,12 @@ def renderLamp(lamp):
         l = lamp.length
         h = lamp.height
 
-        
+        #print("Lamp verticies:", lamp.vertices)
         pygame.draw.polygon(screen, lamp.color, lamp.vertices)
+
+        # This draws the direction of the velocity vectors
+        # pygame.draw.line(screen, black, lamp.position, lamp.position + lamp.velocity*20) 
+
 #        pygame.draw.rect(screen, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
 
 def renderFood(food):
