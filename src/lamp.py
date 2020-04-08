@@ -1,105 +1,103 @@
 import numpy as np
-import matplotlib.pyplot as plt
-
-
 boxWidth = 1000
 boxHeight = 800
 green = (0, 255, 0)
 blue = (0, 0, 128)
-dt = 1 # global variable and essentially parameter
+red = (255,0, 0)
+
+dt = .5 # Time Step
 
 # create lamp class which will be our creatures
-
-### Sal will change things here and add many comments.
-
-
-#### THE LAMP CLASS:
-####    the subjects of study of whom will evolve with time
-####    PROPERTIES
-####
-####    the properties that change upon sex
-####        max_velocity        =   scalar
-####        scent               =   [1x3] numpy array
-####        olfactory           =   [1x3] numpy array
-####        olfactoryDetection  =   [8x2] numpy array
-####        size                =   [1x2] numpy array [length , width]
-####        max_energy          =   scalar, length * width * const
-####
-####    The proerties that do not change upon sex
-####        position    =   [1x2]   numpy array    
-####        velocity    =   [1x2]   numpy array
-####        force       =   [1x2]   numpy array
-####        verticies   =   [2x12]  numpy array
-####        energy      =   scalar
-####
-####    METHODS
-####        move()
-####        rotate()
-####        getVerticies()
-####
-####        sex()
-
 class lamp:
-    def __init__(self, color, x=None, y=None):
-        ### this will be developed further to evolve with evolution
-        self.max_velocity = 3
+    def __init__(self, color=red, x=None, y=None, max_velo=3,
+                 length=30, height=25):
+        
+        self.max_velocity = max_velo
 
-        ### x,y are optional for intialization. 
-        ### if a lamp comes from sex that it will inherrit positition from the parents
-        ### otherwise, generate random coordinates
         if x == None:
-            x_ = np.random.randint(-boxWidth, boxWidth)
+            x_ = np.random.randint(0, boxWidth)
         else:
             x_ = x
         if y == None:
-            y_ = np.random.randint(-boxHeight, boxHeight)
+            y_ = np.random.randint(0, boxHeight)
         else:
             y_ = y
         pos = [x_,y_]
+        
         self.position = np.array(pos)
         
-        ### rndly generate velocity upon lamp creation
-        xDot = np.random.randint(-1, 2)
-        yDot = np.random.randint(-1, 2)
-        vel = [xDot,yDot]
+        xDot = np.random.randint(-2,3)#()-.5#(-1, 2)
+        yDot = np.random.randint(-2,3)#()-.5#(-1, 2)
+        vel = [0,-1]#[xDot,yDot]
         self.velocity = np.array(vel)
         
         self.color = color
-        self.length = 10
-        self.height = 10
-        # set the verticies, which are dependent on the widthand length
-        self.setVerticies()
 
-
-        self.maxEnergy = self.length*self.height*5
+        self.length = length
+        self.height = height
+        
+        self.maxEnergy = self.length*self.height
         self.energy = self.maxEnergy/2
 
+        self.setVertices()
+        
         
     def move(self):
-        # how the force is generated will have to update once we have learning implimented
-        x_force = np.random.rand() - 0.5
-        y_force = np.random.rand() - 0.5
-        self.force = np.array([x_force, y_force])
-        oldVel = self.velocity # store old velocity for lamp rotation
-
-        ### see if new velocity is less than the max vel
-        tempVel = np.add(self.velocity, self.force*dt)
-        if np.sqrt(np.sum(np.square(tempVel))) < self.max_velocity:
-            self.velocity = tempVel
-
-        oldPosition = self.position
-        self.position = self.position + self.velocity*dt
-        newPosition = self.position
-
-        # print("Change in position:", newPosition - oldPosition)
+        
+        ### get current velocity to pass to rotate()
+        oldVelocity = self.velocity
+        
+        x_force = np.random.randint(-1,2)
+        y_force = np.random.randint(-1,2) 
+        force = [x_force, y_force]
+        self.force = np.array(force)
+        
+        if ((self.velocity[0] + self.force[0]*dt)**2 + (self.velocity[1] + self.force[1]*dt)**2)**(1/2) < self.max_velocity:
+            self.velocity = self.velocity + self.force*dt
 
         self.energy -= np.linalg.norm(self.velocity)/20
-        # rotate the lamp so it can be rendered
-        #self.rotate(oldVel)
-        #if self.energy < 0:
-         #   print("YOU'RE DEAD, e = ", self.energy)
 
-    def setVerticies(self):
+
+
+        ### Make verticies such that they are around the origin of the lamp
+        self.position = self.position + self.velocity*dt
+
+        ## rotate the lamp
+        self.rotate()
+
+
+
+
+
+    def rotate(self):
+        # (1) Get unit vector of the velocity for direction
+        # (2) Get the rotation matrix
+
+
+        # GET UNIT VECTOR
+        magV = np.linalg.norm(self.velocity)
+        
+        # IF THERE IS NO VELOCITY VECTOR THEN WE DON'T ROTATE
+        if (magV > 0):
+            xAxis = np.array([1 ,0])
+            dotProd = np.dot(self.velocity, xAxis)
+            third_component = -self.velocity[1] # cross prod with unit vector
+            
+            angle =  np.arccos(np.dot(xAxis, self.velocity)/(magV))
+            # this comes from the cross product to see if w rotate clwwise or cnt clckwise
+            if third_component > 0:
+                angle *= -1
+            print("velocity: ", self.velocity)
+            print("Dot Product:", dotProd)
+            print("Angle: ", angle)
+            ### Create rotation matrix
+            rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+            self.vertices = np.transpose(np.matmul(rotationMatrix, np.transpose(self._vertices)))
+            # put the vertices where the lamp is
+            self.vertices = self.vertices + self.position
+        
+
+    def setVertices(self):
         ###                  _
         ###      *---*      |
         ###     /c/2  \     c
@@ -114,90 +112,32 @@ class lamp:
         a = self.height/2                # half the base of the lamp shade
         c = shadeHeight*self.length     # the widthof the shade
         e = (1-shadeHeight)*self.length # height of pole
-        verticies = np.array([[a,0], [c/2, c], [-c/2, c], [-a,0], [-sliver, 0], [-sliver, -e], [-c/4, -e], [-c/4, -e-sliver], [c/4, -e-sliver], [c/4, -e], [sliver, -e], [sliver,0]])
-        self.verticies = np.add(verticies, self.position)
+        vertices = np.array([[a,0], [c/2, c], [-c/2, c], [-a,0], [-sliver, 0], [-sliver, -e], [-c/4, -e], [-c/4, -e-sliver], [c/4, -e-sliver], [c/4, -e], [sliver, -e], [sliver,0]])
+        angle = -np.pi/2
 
-    def rotate(self, oldVel): #(position, velocity, verticies):
-        ### (1) get unit vector for velocity to obtain the direction
-        ### (2) create rotation matrix matrix 
-        ### (3) apply transformation to verticies
-        ### (4) return transformed verticies
-
-        ### Get unit vector and angle with x-axis
-        magV = np.linalg.norm(self.velocity) 
-        magOldVel = np.linalg.norm(oldVel)
-        if (magV == 0) or (magOldVel == 0):
-            angle = 0
-        elif np.dot(oldVel, self.velocity)/(magV*magOldVel) > 1:
-            print("!!!!", np.dot(oldVel, self.velocity)/(magV*magOldVel))
-            print("dot prod:", np.dot(oldVel, self.velocity))
-            print("oldVel:", oldVel)
-            print("self.velocity:", self.velocity)
-            print("MagV=", magV)
-            print("MagOldVel=", magOldVel)
-            angle = 0
-        else:
-            angle = np.arccos(np.dot(oldVel, self.velocity)/(magV*magOldVel)) # dotproduct with x-axis picks x component
-
-
-        ### Create rotation matrix
         rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+        vertices = np.transpose(np.matmul(rotationMatrix, np.transpose(vertices)))
+        self.vertices = np.add(vertices, self.position)
+        self._vertices = vertices
 
-        ### Center verticies in its own coordinate system
-        centeredVerts = self.verticies - self.position
-
-        ### Rotate lamp's verticies. [2x8] = [2x2] x transpose([8x2]) 
-        rotatedVerts = np.matmul(rotationMatrix, np.transpose(centeredVerts))
-        rotatedVerts = np.transpose(rotatedVerts)
-
-        ### Put lamp back it is current position
-        newVerts = np.add(rotatedVerts, self.position)
-        self.verticies = newVerts
-        
 class Food:
-    def __init__(self, heig, leng):
-        x = np.random.randint(0, boxWidth)
-        y = np.random.randint(0, boxHeight)
-        self.position = (x,y)
-        self.height = heig
-        self.length = leng
+    def __init__(self, x=None, y=None, height=10, length=10):
+
+        if x == None:
+            x_ = np.random.randint(0, boxWidth)
+        else:
+            x_ = x
+        if y == None:
+            y_ = np.random.randint(0, boxHeight)
+        else:
+            y_ = y
+
+        self.position = (x_,y_)
+        self.height = height
+        self.length = length
+        self.energy = self.height*self.length/2
 
     def respawn(self):
         x = np.random.randint(boxWidth/2, boxWidth)
-        y = np.random.randint(boxHeight/2, boxHeight)
+        y = np.random.randint(0, boxHeight)
         self.position = (x,y)
-        
-# red = (255, 0, 0)
-# myLamp = lamp(red)
-
-# print("Velocity 1:", myLamp.velocity)
-# print("position 1:", myLamp.position)
-# plt.fill(myLamp.verticies[:,0], myLamp.verticies[:,1])
-
-# myLamp.move()
-# print("Velocity 2:", myLamp.velocity)
-# print("position 2:", myLamp.position)
-# plt.fill(myLamp.verticies[:,0], myLamp.verticies[:,1])
-
-
-# myLamp.move()
-# print("Velocity 3:", myLamp.velocity)
-# print("position 3:", myLamp.position)
-# plt.fill(myLamp.verticies[:,0], myLamp.verticies[:,1])
-
-# myLamp.move()
-# print("Velocity 4:", myLamp.velocity)
-# print("position 4:", myLamp.position)
-# plt.fill(myLamp.verticies[:,0], myLamp.verticies[:,1])
-
-
-# plt.xlim(-100, 100)
-# plt.ylim(-100, 100)
-# plt.show()
-
-
-#### THERE IS AN ISSUE WITH THE IMPLIMENTATION OF THE ROTATION MATRIX/
-#### Each time I'm finding the angle with respect to the x-axis instead of the pervious velocity vector
-#### I either need to find a different way to impliment the rotation, maybe within move()
-#   Or I will have to keep the orignial shape and just rotate that every single time.
-####    I will tink after the walk
