@@ -39,7 +39,10 @@ class lamp:
         self.maxEnergy = self.length*self.height
         self.energy = self.maxEnergy/2
 
+        self.scentMagnitude = np.zeros([8,3]) # initialize array where we will smell stinky food
+        # Maybe we will need to store the previous scent as well? Not sure. Depends on learning algorithm
         self.setVertices()
+        self.setScentPoints()
         
         
     def move(self):
@@ -92,9 +95,17 @@ class lamp:
             print("Angle: ", angle)
             ### Create rotation matrix
             rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+
+            ### Rotate the lamp vertices
             self.vertices = np.transpose(np.matmul(rotationMatrix, np.transpose(self._vertices)))
             # put the vertices where the lamp is
             self.vertices = self.vertices + self.position
+
+            ### Rotate scent points
+            self.scentPoints = np.transpose(np.matmul(rotationMatrix, np.transpose(self._scentPoints)))
+            self.scentPoints = self.scentPoints + self.position
+
+
         
 
     def setVertices(self):
@@ -119,6 +130,36 @@ class lamp:
         vertices = np.transpose(np.matmul(rotationMatrix, np.transpose(vertices)))
         self.vertices = np.add(vertices, self.position)
         self._vertices = vertices
+    
+    def setScentPoints(self):
+        ### Set the scent points around the lamp. 
+        ### The scent points will be length /2 from the lamps center
+        ### There will be N scent points
+        ### They will have three channels. 
+
+        ### I wonder the best way to store the values and positions? 
+        ### maybe the should be structures? OR dictionaries? 
+        ### I should be which ever is easiest to give to Tolu for reinforcement learning
+
+        ### set general scent points
+        nPoints = 3 # general scent points
+        nostralAngle = np.pi/3
+        theta = np.linspace(-nostralAngle, nostralAngle,nPoints)
+        r = (self.height)/2
+        scent_x = r*np.cos(theta)
+        scent_y = r*np.sin(theta)
+        tempCoordaintes = np.transpose(np.array([scent_x, scent_y])) # make each row be a coordinate
+
+        # Rotate each scent by -90 degrees to be coordiante with lamp
+        angle = 0# -np.pi/2
+        rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
+
+        self._scentPoints = np.transpose(np.matmul(rotationMatrix, np.transpose(tempCoordaintes)))
+        # put us with the current position of the lamp
+        self.scentPoints = np.add(self._scentPoints, self.position)
+
+
+
 
 class Food:
     def __init__(self, x=None, y=None, height=10, length=10):
