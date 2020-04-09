@@ -1,9 +1,15 @@
 import numpy as np
+import matplotlib.pyplot as plt
 boxWidth = 1000
 boxHeight = 800
 green = (0, 255, 0)
 blue = (0, 0, 128)
 red = (255,0, 0)
+
+res = 1 # resolution!
+grid_x = np.linspace(0, boxWidth, boxWidth)
+grid_y = np.linspace(0, boxHeight, boxHeight)
+(XS, YS) = np.meshgrid(grid_x,grid_y)
 
 dt = .5 # Time Step
 
@@ -103,7 +109,7 @@ class lamp:
 
             ### Rotate scent points
             self.scentPoints = np.transpose(np.matmul(rotationMatrix, np.transpose(self._scentPoints)))
-            self.scentPoints = self.scentPoints + self.position
+            self.scentPoints = np.floor(self.scentPoints + self.position) # scent needs to be on the grid
 
 
         
@@ -154,9 +160,9 @@ class lamp:
         angle = 0# -np.pi/2
         rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
 
-        self._scentPoints = np.transpose(np.matmul(rotationMatrix, np.transpose(tempCoordaintes)))
+        self._scentPoints = np.floor(np.transpose(np.matmul(rotationMatrix, np.transpose(tempCoordaintes))))
         # put us with the current position of the lamp
-        self.scentPoints = np.add(self._scentPoints, self.position)
+        self.scentPoints = np.floor(np.add(self._scentPoints, self.position))
 
 
 
@@ -177,8 +183,31 @@ class Food:
         self.height = height
         self.length = length
         self.energy = self.height*self.length/2
+        self.stinkMag = 5
+        self.stinkRadius = 50
+        self.stink = self.stinkMag*np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
+
+
 
     def respawn(self):
         x = np.random.randint(boxWidth/2, boxWidth)
         y = np.random.randint(0, boxHeight)
         self.position = (x,y)
+
+
+# food_colony = []
+# totalStink = np.zeros([boxHeight,boxWidth])
+# for i in range(0, 10):
+#     food_i = Food()
+#     food_colony.append(food_i)    
+#     totalStink = totalStink + food_colony[i].stink
+
+# fig,ax=plt.subplots(1,1)
+
+
+# cp = ax.contourf(XS, YS, totalStink)
+# fig.colorbar(cp) # Add a colorbar to a plot
+# ax.set_title('Filled Contours Plot')
+# #ax.set_xlabel('x (cm)')
+# ax.set_ylabel('y (cm)')
+# plt.show()
