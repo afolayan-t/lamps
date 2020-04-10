@@ -69,9 +69,10 @@ def lampSex(parent):
     velo_buff = 0
     length_buff = 0
     if parent.color == green:
-        velo_buff =  np.random.uniform(low=-parent.max_velocity/3, high=parent.max_velocity/3)
-        length_buff = np.random.randint(low=-2, high=3)
-        
+        velo_buff =  np.random.uniform(low=-parent.max_velocity/3, high=parent.max_velocity/2)
+        length_buff = np.random.randint(low=-1, high=3)
+        height_buff = np.random.randint(low=-1, high=3)
+ 
     baby = lamp(color=parent.color,
                 x=x_+2, y=y_+2,
                 max_velo=parent.max_velocity+velo_buff,
@@ -112,10 +113,11 @@ def isCollision(obj1, obj2):
    #(x1, y1) = obj1.position
     (x2, y2) = obj2.position
 
-    try:
-        subVerts = obj1.vertices[0:4]
-    except:
-        print("object 1 must be a lamp")
+#    try:
+    subVerts = obj1.vertices[0:4]
+#    except:
+    #    subVerts =  obj1.vertices[0:4]
+     #   print("object 1 must be a lamp")
 
     for i in range(len(subVerts)):
         x1 = subVerts[i][0]
@@ -156,12 +158,21 @@ def init_foods():
         if RUN_PYGAME:
             renderFood(food_colony[j])
 
+def init_simulation_data():
+    simulation_path = "../simulation_data/"
+    date = datetime.date.today()
+    stats_file = open(simulation_path + str(date)+".txt", "a")
+    date_time = datetime.datetime.now()
+    stats_file.write("Start of simulation\n")
+    stats_file.write(str(date_time)+"\n")
+    return stats_file
+    
 
 def main():
 
     init_lamps()
     init_foods()
-
+    stats_file = init_simulation_data()
     
     num_lamps_alive = numLamps
     initial_time = time.time()
@@ -174,15 +185,12 @@ def main():
     num_reds = numLamps/2
     reds_alive = []
     red_times = []
-
+    
+    stats_file.write("greens: " + str(num_greens) + " reds: " + str(num_reds))
+    stats_file.write(" foods: " + str(numFoods) + " food regeneration/day: " + str(foodResupply)+ "\n\n")
+    
     num_iterations = 0
     running = True
-
-    stats_file = open("stats.txt", "a")
-    date_time = datetime.datetime.now()
-    stats_file.write("Start of simulation\n")
-    stats_file.write(str(date_time)+"\n")
-    stats_file.write("greens: " + str(num_greens) + " reds: " + str(num_reds) + "\n")
     try:
         while running:
             # reset screen color to white
@@ -204,55 +212,78 @@ def main():
                     if RUN_PYGAME:
                         renderFood(food_colony[j])
                     if isCollision(lamp_colony[i], food_colony[j]):
-    
+
                         if lamp_colony[i].energy >= lamp_colony[i].maxEnergy:
                             lamp_colony[i].energy = lamp_colony[i].maxEnergy
 
                         if lamp_colony[i].energy >= .8*lamp_colony[i].maxEnergy:
+                            ### string to put in txt file for data
+                            birth_string_to_write = ""
+                            birth_string_to_write += "birth "
+                            
                             lamp_colony[i].energy *= .5
                             baby = lampSex(lamp_colony[i])
-    
                             num_lamps_alive += 1
                             lamps_alive.append(num_lamps_alive)
                             now = time.time()
-                            times.append(now-initial_time)
+                            time_elapsed = now-initial_time
+                            times.append(time_elapsed)
+                            
                             if baby.color == green:
+                                birth_string_to_write += "green "
                                 num_greens += 1
                                 greens_alive.append(num_greens)
                                 green_times.append(now-initial_time)
                             elif baby.color == red:
+                                birth_string_to_write += "red "
                                 num_reds += 1
                                 reds_alive.append(num_reds)
                                 red_times.append(now-initial_time)
-                                    
+                            birth_string_to_write += str(time_elapsed)
+                            birth_string_to_write += "\n"
+                            stats_file.write(birth_string_to_write)
+                            
                         lamp_colony[i].energy += food_colony[j].energy
-                        eaten_foods.append(food_colony[j])        
-    
+                        eaten_foods.append(food_colony[j])
+
+                        
                 for food_ in eaten_foods:
                     food_colony.remove(food_)
-     
-                            
+
                 if lamp_colony[i].energy <= 0:
+                    ### string to put in txt file for data                                                 
+                    death_string_to_write = ""
+                    death_string_to_write += "death "
+                    
                     dead_lamps.append(lamp_colony[i])
-    
+                    
                     # for plotting purposes
                     num_lamps_alive -= 1
                     lamps_alive.append(num_lamps_alive)
                     now = time.time()
-                    times.append(now-initial_time)
+                    time_elapsed = now-initial_time
+                    times.append(time_elapsed)
     
                     if lamp_colony[i].color == green:
+                        death_string_to_write += "green "
                         num_greens -= 1
                         greens_alive.append(num_greens)
-                        green_times.append(now-initial_time)
+                        green_times.append(time_elapsed)
                     elif lamp_colony[i].color == red:
+                        death_string_to_write += "red "
                         num_reds -= 1
                         reds_alive.append(num_reds)
-                        red_times.append(now-initial_time)
-                    
+                        red_times.append(time_elapsed)
+                        
+                    death_string_to_write += str(time_elapsed)
+                    death_string_to_write += "\n"
+                    stats_file.write(death_string_to_write)
+                        
             for lamp_ in dead_lamps:
                 lamp_colony.remove(lamp_)
-    
+
+
+                
             if RUN_PYGAME:
                 # if we click 'X' on the screen, stop rendering the screen
                 for event in pygame.event.get():
@@ -307,6 +338,7 @@ def main():
     plt.show()
     stats_file.write("\n\n")
     stats_file.close()
-  
+    print("Num greens: ", num_greens)
+    print("Num reds:   ", num_reds)
 if __name__== "__main__":
   main()
