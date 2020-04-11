@@ -18,16 +18,27 @@ red = (255, 0, 0)
 black = (0,0,0)
 
 
-
-try:
+if len(sys.argv) == 4: #all arguments present
     numLamps = int(sys.argv[1])
     numFoods = int(sys.argv[2])
     foodResupply = int(sys.argv[3])
-except:
-    # number of lamps in our colony
+
+if len(sys.argv) == 3: #2 arguments provided
+    numLamps = int(sys.argv[1])
+    numFoods = int(sys.argv[2])
+    foodResupply = int(input("number of foods per respawn? "))
+
+if len(sys.argv) == 2: #1 argument present
+    numLamps = int(sys.argv[1])
+    numFoods = int(input("number of foods? "))
+    foodResupply = int(input("number of foods per respawn? "))
+
+
+if len(sys.argv) == 1: #no arguments present
     numLamps = int(input("number of lamps? "))
     numFoods = int(input("number of foods? "))
     foodResupply = int(input("number of foods per respawn? "))
+
 
 use_pygame = input("Use pygame?? (y/n) ")
 while use_pygame != "y" and use_pygame != "n":
