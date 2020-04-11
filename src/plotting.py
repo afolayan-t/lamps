@@ -3,28 +3,54 @@ import datetime
 
 simulation_path = "../simulation_data/"
 
-# birth green 4.78020977973938
-# birth red 5.061302900314331
-# birth green 5.430384874343872
-# death green 5.9920477867126465
-# death red 6.09492301940918
-# death red 6.13077187538147
-# birth red 6.8851330280303955
-# birth green 7.54793381690979
-# birth green 8.059895038604736
-# birth green 9.479753971099854
+# birth,45,16,12,(0, 255, 0),50.5944619178772
+# birth,46,15,12,(255, 0, 0),52.92004895210266
+# death,7,53.164345026016235
 
 class Simulation:
     def __init__(self, day, data):
         self.day = day
-        self.time = time
-        self.data = data
-        self.header = getHeader()
+#        self.time = time
+#        self.data = data
+        self.colors = ["red","green"] # parse this later
+        self.init_data(data)
+        self.parse_simulation()
+      
+    def init_data(self, data):
+        header = []
+        for i in range(len(data)):
+            if data[i] == "":
+                break
+            header.append(data[i])
+        self.header = header
+
+        lines_o_data = []
+        for i in range(len(header)+1,len(data)):
+            if data[i] == "":
+                break
+            lines_o_data.append(data[i])
+        self.data = lines_o_data
+
+    def parse_header(self):
+        print()
+        #        while#
         
-    def plotPopulation():
+    def parse_simulation(self):
+        num_lamps_alive  = int(self.header[2])
+        self.num_lamps_alive = 0
+        
+        for i in range(len(self.data)):
+            if 
+
+
+
+            
+                
+    def plotPopulation(self):
         print()
-    def plotGreen2dHistogram():
+    def plotGreen2dHistogram(self):
         print()
+        
         
 class Day:
     def __init__(self, date):
@@ -70,6 +96,10 @@ class Day:
     
 date = datetime.date.today()
 d = Day(date)
-simulation_data = d.getSimulationData(d.simulation_times[0])
-print(simulation_data)
+#simulation_data = d.getSimulationData(d.simulation_times[0])
+simulation_data = d.getSimulationData(d.simulation_times[len(d.simulation_times)-1])
 
+s = Simulation(d, simulation_data)
+print(s.header)
+print(s.data)
+B

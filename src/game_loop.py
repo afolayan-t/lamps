@@ -17,7 +17,8 @@ blue = (0, 0, 128)
 red = (255, 0, 0)
 black = (0,0,0)
 
-
+#### ID NUMBER TO ASSIGN TO LAMPS, WILL BE INCREASED BY WITH EACH NEW LAMP
+lamp_ID = 0
 
 try:
     numLamps = int(sys.argv[1])
@@ -64,6 +65,8 @@ def dumpFoods(n):
             renderFood(food_i)
         
 def lampSex(parent):
+    global lamp_ID
+    
     x_ = parent.position[0]
     y_ = parent.position[1]
     velo_buff = 0
@@ -73,12 +76,14 @@ def lampSex(parent):
         length_buff = np.random.randint(low=-1, high=3)
         height_buff = np.random.randint(low=-1, high=3)
  
-    baby = lamp(color=parent.color,
+    baby = lamp(ID=lamp_ID,
+                color=parent.color,
                 x=x_+2, y=y_+2,
                 max_velo=parent.max_velocity+velo_buff,
                 length=parent.length+length_buff,
                 height=parent.height)    
-
+    lamp_ID += 1
+    
     if baby.length <= 0:
         baby.length = 1
     if baby.max_velocity <= 0:
@@ -142,11 +147,14 @@ def endGame(display_):
     time.sleep(3)
 
 def init_lamps():
+    global lamp_ID
     for i in range(numLamps):
         if i % 2 == 0:
-            lamp_i = lamp(green)
+            lamp_i = lamp(ID=lamp_ID,color=green)
+            lamp_ID += 1
         else:
-            lamp_i = lamp(red)
+            lamp_i = lamp(ID=lamp_ID,color=red)
+            lamp_ID += 1
         lamp_colony.append(lamp_i)
         if RUN_PYGAME:
             renderLamp(lamp_colony[i])
@@ -162,17 +170,42 @@ def init_simulation_data():
     simulation_path = "../simulation_data/"
     date = datetime.date.today()
     stats_file = open(simulation_path + str(date)+".txt", "a")
+    
     date_time = datetime.datetime.now()
     stats_file.write("Start of simulation\n")
     stats_file.write(str(date_time)+"\n")
+    stats_file.write(str(numLamps)+"\n")
     return stats_file
     
+
+def writeLampBirth(lamp, tob):
+    ##### write lamp data to the txt file
+    birth_string_to_write = "birth,"
+    birth_string_to_write += (str(lamp.ID) + ",")
+    birth_string_to_write += (str(lamp.length) + ",")
+    birth_string_to_write += (str(lamp.height) + ",")
+    birth_string_to_write += (str(lamp.color) + ",")
+    birth_string_to_write += str(tob)
+    birth_string_to_write += "\n"
+    stats_file.write(birth_string_to_write)
+
+
+def writeLampDeath(lamp, tod):
+    death_string_to_write = "death,"
+    death_string_to_write += (str(lamp.ID) + ",")
+    death_string_to_write += (str(tod))
+    death_string_to_write += "\n"
+    stats_file.write(death_string_to_write)
+    
+
+#### FILE TO WRITE ALL DATA TO
+stats_file = init_simulation_data()
 
 def main():
 
     init_lamps()
     init_foods()
-    stats_file = init_simulation_data()
+
     
     num_lamps_alive = numLamps
     initial_time = time.time()
@@ -218,30 +251,29 @@ def main():
 
                         if lamp_colony[i].energy >= .8*lamp_colony[i].maxEnergy:
                             ### string to put in txt file for data
-                            birth_string_to_write = ""
-                            birth_string_to_write += "birth "
+
                             
                             lamp_colony[i].energy *= .5
                             baby = lampSex(lamp_colony[i])
+
+                            
                             num_lamps_alive += 1
                             lamps_alive.append(num_lamps_alive)
                             now = time.time()
                             time_elapsed = now-initial_time
                             times.append(time_elapsed)
+                            ##### WRITE BIRTH TO TXT FILE
+                            writeLampBirth(baby, time_elapsed)
                             
                             if baby.color == green:
-                                birth_string_to_write += "green "
+    
                                 num_greens += 1
                                 greens_alive.append(num_greens)
                                 green_times.append(now-initial_time)
                             elif baby.color == red:
-                                birth_string_to_write += "red "
                                 num_reds += 1
                                 reds_alive.append(num_reds)
                                 red_times.append(now-initial_time)
-                            birth_string_to_write += str(time_elapsed)
-                            birth_string_to_write += "\n"
-                            stats_file.write(birth_string_to_write)
                             
                         lamp_colony[i].energy += food_colony[j].energy
                         eaten_foods.append(food_colony[j])
@@ -251,10 +283,8 @@ def main():
                     food_colony.remove(food_)
 
                 if lamp_colony[i].energy <= 0:
-                    ### string to put in txt file for data                                                 
-                    death_string_to_write = ""
-                    death_string_to_write += "death "
-                    
+                    #### WRITE-LAMP–DEATH(lamp_colony[i])
+                    ### string to put in txt file for data                                                                     
                     dead_lamps.append(lamp_colony[i])
                     
                     # for plotting purposes
@@ -263,21 +293,16 @@ def main():
                     now = time.time()
                     time_elapsed = now-initial_time
                     times.append(time_elapsed)
-    
+
+                    writeLampDeath(lamp_colony[i], time_elapsed)
                     if lamp_colony[i].color == green:
-                        death_string_to_write += "green "
                         num_greens -= 1
                         greens_alive.append(num_greens)
                         green_times.append(time_elapsed)
                     elif lamp_colony[i].color == red:
-                        death_string_to_write += "red "
                         num_reds -= 1
                         reds_alive.append(num_reds)
                         red_times.append(time_elapsed)
-                        
-                    death_string_to_write += str(time_elapsed)
-                    death_string_to_write += "\n"
-                    stats_file.write(death_string_to_write)
                         
             for lamp_ in dead_lamps:
                 lamp_colony.remove(lamp_)
