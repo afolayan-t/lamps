@@ -5,15 +5,20 @@ green = (0, 255, 0)
 blue = (0, 0, 128)
 red = (255,0, 0)
 
-dt = .5 # Time Step
+dt = 1 # Time Step
 
 # create lamp class which will be our creatures
 class lamp:
-    def __init__(self, color=red, x=None, y=None, max_velo=3,
-                 length=30, height=25):
+    def __init__(self, ID, color=red, x=None, y=None, max_velo=3,
+                 length=15, height=12, parent=None):
         
         self.max_velocity = max_velo
 
+
+        self.ID = ID
+        self.foods_eaten = 0
+        self.parent = parent
+        
         if x == None:
             x_ = np.random.randint(0, boxWidth)
         else:
@@ -87,9 +92,7 @@ class lamp:
             # this comes from the cross product to see if w rotate clwwise or cnt clckwise
             if third_component > 0:
                 angle *= -1
-            print("velocity: ", self.velocity)
-            print("Dot Product:", dotProd)
-            print("Angle: ", angle)
+
             ### Create rotation matrix
             rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
             self.vertices = np.transpose(np.matmul(rotationMatrix, np.transpose(self._vertices)))
