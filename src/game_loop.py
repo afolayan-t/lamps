@@ -81,7 +81,8 @@ def lampSex(parent):
                 x=x_+2, y=y_+2,
                 max_velo=parent.max_velocity+velo_buff,
                 length=parent.length+length_buff,
-                height=parent.height)    
+                height=parent.height,
+                parent=parent)    
     lamp_ID += 1
     
     if baby.length <= 0:
@@ -180,20 +181,26 @@ def init_simulation_data():
 
 def writeLampBirth(lamp, tob):
     ##### write lamp data to the txt file
-    birth_string_to_write = "birth,"
-    birth_string_to_write += (str(lamp.ID) + ",")
-    birth_string_to_write += (str(lamp.length) + ",")
-    birth_string_to_write += (str(lamp.height) + ",")
-    birth_string_to_write += (str(lamp.color) + ",")
-    birth_string_to_write += str(tob)
+    birth_string_to_write = "birth;"
+    birth_string_to_write += (str(tob) + ";")
+    birth_string_to_write += (str(lamp.ID) + ";")
+    birth_string_to_write += (str(lamp.length) + ";")
+    birth_string_to_write += (str(lamp.height) + ";")
+    birth_string_to_write += (str(lamp.max_velocity) + ";")
+    birth_string_to_write += (str(lamp.color) + ";")
+    if lamp.parent == None:
+        birth_string_to_write += "None"
+    else:
+        birth_string_to_write += str(lamp.parent.ID)    
     birth_string_to_write += "\n"
     stats_file.write(birth_string_to_write)
 
 
 def writeLampDeath(lamp, tod):
-    death_string_to_write = "death,"
-    death_string_to_write += (str(lamp.ID) + ",")
-    death_string_to_write += (str(tod))
+    death_string_to_write = "death;"
+    death_string_to_write += (str(tod) + ";")
+    death_string_to_write += (str(lamp.ID) + ";")
+    death_string_to_write += str(lamp.foods_eaten)
     death_string_to_write += "\n"
     stats_file.write(death_string_to_write)
     
@@ -245,7 +252,8 @@ def main():
                     if RUN_PYGAME:
                         renderFood(food_colony[j])
                     if isCollision(lamp_colony[i], food_colony[j]):
-
+                        lamp_colony[i].foods_eaten += 1
+                        
                         if lamp_colony[i].energy >= lamp_colony[i].maxEnergy:
                             lamp_colony[i].energy = lamp_colony[i].maxEnergy
 
@@ -260,7 +268,7 @@ def main():
                             num_lamps_alive += 1
                             lamps_alive.append(num_lamps_alive)
                             now = time.time()
-                            time_elapsed = now-initial_time
+                            time_elapsed = round(now-initial_time, 3)
                             times.append(time_elapsed)
                             ##### WRITE BIRTH TO TXT FILE
                             writeLampBirth(baby, time_elapsed)
@@ -291,7 +299,7 @@ def main():
                     num_lamps_alive -= 1
                     lamps_alive.append(num_lamps_alive)
                     now = time.time()
-                    time_elapsed = now-initial_time
+                    time_elapsed = round(now-initial_time, 3)
                     times.append(time_elapsed)
 
                     writeLampDeath(lamp_colony[i], time_elapsed)

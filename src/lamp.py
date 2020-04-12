@@ -10,13 +10,14 @@ dt = 1 # Time Step
 # create lamp class which will be our creatures
 class lamp:
     def __init__(self, ID, color=red, x=None, y=None, max_velo=3,
-                 length=15, height=12):
+                 length=15, height=12, parent=None):
         
         self.max_velocity = max_velo
 
 
         self.ID = ID
         self.foods_eaten = 0
+        self.parent = parent
         
         if x == None:
             x_ = np.random.randint(0, boxWidth)

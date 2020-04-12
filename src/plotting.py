@@ -3,19 +3,29 @@ import datetime
 
 simulation_path = "../simulation_data/"
 
-# birth,45,16,12,(0, 255, 0),50.5944619178772
-# birth,46,15,12,(255, 0, 0),52.92004895210266
-# death,7,53.164345026016235
+# birth,2.595,13,15,12,(255, 0, 0),3
+# death,4.156,11,0
+
+##### SET INDEXES OF BIRTH/DEATH STATS #####
+TIME_INDEX = 1
+ID_INDEX = 2
+LENGTH_INDEX = 3
+HEIGHT_INDEX = 4
+MAX_VELOCITY_INDEX = 5
+COLOR_INDEX = 6
+PARENT_ID_INDEX = 7
+#####
+FOODS_EATEN_INDEX = 3
+
 
 class Simulation:
     def __init__(self, day, data):
         self.day = day
-#        self.time = time
-#        self.data = data
         self.colors = ["red","green"] # parse this later
         self.init_data(data)
         self.parse_simulation()
-      
+
+        
     def init_data(self, data):
         header = []
         for i in range(len(data)):
@@ -33,21 +43,69 @@ class Simulation:
 
     def parse_header(self):
         print()
-        #        while#
+
         
     def parse_simulation(self):
-        num_lamps_alive  = int(self.header[2])
-        self.num_lamps_alive = 0
+        self.num_lamps_0 = int(self.header[1])
+        num_lamps_alive = self.num_lamps_0
+
+        self.lengths = []
+        self.heights = []
+        self.max_velos = []
         
+        self.lamps_alive = []
+        self.times = []
         for i in range(len(self.data)):
-            if 
+            line = self.data[i].split(";")
+            if line[0] == "death":
+                num_lamps_alive -= 1
+                self.lamps_alive.append(num_lamps_alive)
+                time = line[TIME_INDEX]
+                self.times.append(time)
+                
+            elif line[0] == "birth":
+                num_lamps_alive += 1
+                self.lamps_alive.append(num_lamps_alive)
+                time = line[TIME_INDEX]
+                self.times.append(time)
 
-
-
-            
+                if line[COLOR_INDEX] == "(0, 255, 0)": ## chNGe to if (canMutate)
+                    length = line[LENGTH_INDEX]
+                    height = line[HEIGHT_INDEX]
+                    max_vel = line[MAX_VELOCITY_INDEX]
+                    
+                    self.lengths.append(int(length))
+                    self.heights.append(int(height))
+                    self.max_velos.append(float(max_vel)) 
+                
                 
     def plotPopulation(self):
-        print()
+        plt.plot(self.times, self.lamps_alive)
+        plt.xlabel("time (s)")
+        plt.ylabel("lamps")
+        plt.show()
+
+    def plotStats(self):
+        print("AVG LEN GR ", sum(self.lengths)/len(self.lengths))
+        print("AVG HEIGHT GR ", sum(self.heights)/len(self.heights))
+        print("AVG LEN GR ", round( sum(self.max_velos)/len(self.max_velos), 3) )
+        
+        plt.hist(self.lengths)
+        plt.xlabel("number of lamps")
+        plt.ylabel("Length (pixels)")
+        plt.title("Distribution of lenghts")
+        plt.show()
+        plt.xlabel("number of lamps")
+        plt.ylabel("Height (pixels)")
+        plt.title("Distribution of heights")
+        plt.hist(self.heights)
+        plt.show()
+        plt.hist(self.max_velos)
+        plt.xlabel("number of lamps")
+        plt.ylabel("max velo")
+        plt.title("Distribution of max velos")
+        plt.show()
+        
     def plotGreen2dHistogram(self):
         print()
         
@@ -100,6 +158,7 @@ d = Day(date)
 simulation_data = d.getSimulationData(d.simulation_times[len(d.simulation_times)-1])
 
 s = Simulation(d, simulation_data)
-print(s.header)
-print(s.data)
-B
+
+#s.plotPopulation()
+
+s.plotStats()
