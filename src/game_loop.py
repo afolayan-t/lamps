@@ -106,8 +106,14 @@ def renderLamp(lamp):
         pygame.draw.polygon(screen, lamp.color, lamp.vertices)
 
         # This draws the direction of the velocity vectors
-        # pygame.draw.line(screen, black, lamp.position, lamp.position + lamp.velocity*20) 
+        pygame.draw.line(screen, black, lamp.position, lamp.position + lamp.velocity*20) 
 
+        # draw the scent points for each lamp
+
+        for i in range(0,3):
+            x = int(lamp.scentPoints[i,0])
+            y = int(lamp.scentPoints[i,1])
+            pygame.draw.circle(screen, blue, (x,y), int(np.floor(lamp.height/4)))
 #        pygame.draw.rect(screen, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
 
 def renderFood(food):
