@@ -85,23 +85,22 @@ class lamp:
         ## rotate the lamp
         self.rotate() # also moves scent points
 
-        ## Smell the environment 
-
-
         ## Move the sinkfield of the lamp
         self.setStinkField()
 
     def smell(self, globalStinkField):
         # assign the globalStinkField's rgb values to each nostril
 
-        # must subtract the lamp's own odor from stink field 
-        # allign coordiantes
+        # remove lamp's own scent from global stink field
+        newStinkField = np.add(globalStinkField,-self.stinkField)
+
+        # allign coordiantes of scent points 
         for i in range(0, len(self.scentPoints)):
             xMins = XS-self.scentPoints[i,0] # get minimum distance from grid point
             yMins = YS-self.scentPoints[i,1] 
             nearest = xMins**2 + yMins**2
             nearestIndicies= np.where(nearest == np.amin(nearest)) # returns indicies
-            self.scentMagnitude[i,:] = globalStinkField[nearestIndicies[0], nearestIndicies[1], :]
+            self.scentMagnitude[i,:] = newStinkField[nearestIndicies[0], nearestIndicies[1], :] 
 
     def rotate(self):
         # (1) Get unit vector of the velocity for direction
