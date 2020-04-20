@@ -60,6 +60,8 @@ class lamp:
 
         self.length = length
         self.height = height
+
+        self.mass =  .4*self.length*( (.2*self.length + .5*self.height)/2 )
         
         self.maxEnergy = self.length*self.height
         self.energy = self.maxEnergy/2
@@ -82,8 +84,8 @@ class lamp:
         
         if ((self.velocity[0] + self.force[0]*dt)**2 + (self.velocity[1] + self.force[1]*dt)**2)**(1/2) < self.max_velocity:
             self.velocity = self.velocity + self.force*dt
-
-        self.energy -= np.linalg.norm(self.velocity)/20
+        f = 800
+        self.energy -=  (self.mass*(np.linalg.norm(self.velocity))**2)/f
 
         ### Make verticies such that they are around the origin of the lamp
         self.position = self.position + self.velocity*dt
