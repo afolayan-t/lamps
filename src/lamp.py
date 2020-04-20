@@ -11,7 +11,7 @@ grid_x = np.linspace(0, boxWidth, boxWidth)
 grid_y = np.linspace(0, boxHeight, boxHeight)
 (XS, YS) = np.meshgrid(grid_x,grid_y)
 
-dt = .5 # Time Step
+dt = 1 # Time Step
 
 
 
@@ -79,8 +79,6 @@ class lamp:
 
         self.energy -= np.linalg.norm(self.velocity)/20
 
-
-
         ### Make verticies such that they are around the origin of the lamp
         self.position = self.position + self.velocity*dt
 
@@ -93,10 +91,10 @@ class lamp:
         ## Move the sinkfield of the lamp
         self.setStinkField()
 
-
     def smell(self, globalStinkField):
         # assign the globalStinkField's rgb values to each nostril
 
+        # must subtract the lamp's own odor from stink field 
         # allign coordiantes
         for i in range(0, len(self.scentPoints)):
             xMins = XS-self.scentPoints[i,0] # get minimum distance from grid point
@@ -104,10 +102,6 @@ class lamp:
             nearest = xMins**2 + yMins**2
             nearestIndicies= np.where(nearest == np.amin(nearest)) # returns indicies
             self.scentMagnitude[i,:] = globalStinkField[nearestIndicies[0], nearestIndicies[1], :]
-
-
-
-
 
     def rotate(self):
         # (1) Get unit vector of the velocity for direction
@@ -133,15 +127,13 @@ class lamp:
             rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
 
             ### Rotate the lamp vertices
-            self.vertices = np.transpose(np.matmul(rotationMatrix, np.transpose(self._vertices)))
+            self.vertices = np.transpose(np.matmul(rotationMatrix, np.transpose(self._lampFrameVertices)))
             # put the vertices where the lamp is
             self.vertices = self.vertices + self.position
 
             ### Rotate scent points
-            self.scentPoints = np.transpose(np.matmul(rotationMatrix, np.transpose(self._scentPoints)))
+            self.scentPoints = np.transpose(np.matmul(rotationMatrix, np.transpose(self._lampFrameScentPoints)))
             self.scentPoints = np.floor(self.scentPoints + self.position) # scent needs to be on the grid
-
-
     
     def setScentPoints(self):
         ### Set the scent points around the lamp. 
@@ -166,9 +158,9 @@ class lamp:
         angle = 0# -np.pi/2
         rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
 
-        self._scentPoints = np.floor(np.transpose(np.matmul(rotationMatrix, np.transpose(tempCoordaintes))))
+        self._lampFrameScentPoints = np.floor(np.transpose(np.matmul(rotationMatrix, np.transpose(tempCoordaintes))))
         # put us with the current position of the lamp
-        self.scentPoints = np.floor(np.add(self._scentPoints, self.position))
+        self.scentPoints = np.floor(np.add(self._lampFrameScentPoints, self.position))
 
     def setStinkField(self):
         # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
@@ -178,8 +170,6 @@ class lamp:
         stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
         for i in range(0,3):
             self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
-        
-
 
     def setVertices(self):
         ###                  _
@@ -201,8 +191,8 @@ class lamp:
 
         rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
         vertices = np.transpose(np.matmul(rotationMatrix, np.transpose(vertices)))
-        self.vertices = np.add(vertices, self.position)
-        self._vertices = vertices
+        self.vertices = np.add(vertices, self.position) # 
+        self._lampFrameVertices = vertices # lamp frame verticies 
 
 
 class Food:
@@ -235,26 +225,29 @@ class Food:
         for i in range(0,3):
             self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
 
-
-
-
     def respawn(self):
         x = np.random.randint(boxWidth/2, boxWidth)
         y = np.random.randint(0, boxHeight)
         self.position = (x,y)
 
 
-food_colony = []
-totalStink = np.zeros([boxHeight,boxWidth, 3])
-for i in range(0, 10):
-    food_i = Food()
-    food_colony.append(food_i)    
-    totalStink = totalStink + food_colony[i].stinkField
+# food_colony = []
+# totalStink = np.zeros([boxHeight,boxWidth, 3])
+# for i in range(0, 10):
+#     food_i = Food()
+#     food_colony.append(food_i)    
+#     totalStink = totalStink + food_colony[i].stinkField
 
-np.sum(food_colony[:].totalStink)
-myLamp = lamp()
-myLamp.move()
-myLamp.smell(totalStink)
+# # np.sum(food_colony[:].totalStink)
+# myLamp = lamp()
+# myLamp.move()
+
+# myLamp.smell(totalStink)
+
+# print('scent Coordinates:')
+# print(myLamp.scentPoints)
+# print('scent magnitude:')
+# print(myLamp.scentMagnitude)
 
 # fig,ax=plt.subplots(1,1)
 
