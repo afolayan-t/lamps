@@ -6,6 +6,7 @@ green = (0, 255, 0)
 blue = (0, 0, 128)
 red = (255,0, 0)
 
+
 res = 1 # grid resolution!
 grid_x = np.linspace(0, boxWidth, boxWidth)
 grid_y = np.linspace(0, boxHeight, boxHeight)
@@ -33,6 +34,11 @@ class lamp:
         
         self.max_velocity = max_velo
 
+
+        self.ID = ID
+        self.foods_eaten = 0
+        self.parent = parent
+        
         if x == None:
             x_ = np.random.randint(0, boxWidth)
         else:
@@ -119,9 +125,7 @@ class lamp:
             # this comes from the cross product to see if w rotate clwwise or cnt clckwise
             if third_component > 0:
                 angle *= -1
-            print("velocity: ", self.velocity)
-            print("Dot Product:", dotProd)
-            print("Angle: ", angle)
+
             ### Create rotation matrix
             rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
 
