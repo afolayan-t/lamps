@@ -71,6 +71,7 @@ def lampSex(parent):
     y_ = parent.position[1]
     velo_buff = 0
     length_buff = 0
+    height_buff = 0
     if parent.color == green:
         velo_buff =  np.random.uniform(low=-parent.max_velocity/3, high=parent.max_velocity/2)
         length_buff = np.random.randint(low=-1, high=3)
@@ -81,7 +82,7 @@ def lampSex(parent):
                 x=x_+2, y=y_+2,
                 max_velo=parent.max_velocity+velo_buff,
                 length=parent.length+length_buff,
-                height=parent.height,
+                height=parent.height+height_buff,
                 parent=parent)    
     lamp_ID += 1
     

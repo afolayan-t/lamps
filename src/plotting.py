@@ -91,18 +91,18 @@ class Simulation:
         print("AVG LEN GR ", round( sum(self.max_velos)/len(self.max_velos), 3) )
         
         plt.hist(self.lengths)
-        plt.xlabel("number of lamps")
-        plt.ylabel("Length (pixels)")
+        plt.ylabel("number of lamps")
+        plt.xlabel("Length (pixels)")
         plt.title("Distribution of lenghts")
         plt.show()
-        plt.xlabel("number of lamps")
-        plt.ylabel("Height (pixels)")
+        plt.ylabel("number of lamps")
+        plt.xlabel("Height (pixels)")
         plt.title("Distribution of heights")
         plt.hist(self.heights)
         plt.show()
         plt.hist(self.max_velos)
-        plt.xlabel("number of lamps")
-        plt.ylabel("max velo")
+        plt.ylabel("number of lamps")
+        plt.xlabel("max velo")
         plt.title("Distribution of max velos")
         plt.show()
         
@@ -159,6 +159,6 @@ simulation_data = d.getSimulationData(d.simulation_times[len(d.simulation_times)
 
 s = Simulation(d, simulation_data)
 
-#s.plotPopulation()
+s.plotPopulation()
 
 s.plotStats()
