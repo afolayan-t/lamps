@@ -1,4 +1,4 @@
-import numpy as np
+Aimport numpy as np
 import matplotlib.pyplot as plt
 boxWidth = 1000
 boxHeight = 800
