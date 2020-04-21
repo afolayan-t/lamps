@@ -1,4 +1,4 @@
-Aimport numpy as np
+import numpy as np
 import matplotlib.pyplot as plt
 boxWidth = 1000
 boxHeight = 800
@@ -29,8 +29,8 @@ class lamp:
     #   nomenclature:
     #   scent is what you detect where stink is what you are
 
-    def __init__(self, color=red, x=None, y=None, max_velo=3,
-                 length=30, height=25):
+    def __init__(self, ID=0, parent=None, color=red, x=None, y=None, max_velo=3,
+                 length=15, height=12):
         
         self.max_velocity = max_velo
 
@@ -94,7 +94,7 @@ class lamp:
         self.rotate() # also moves scent points
 
         ## Move the sinkfield of the lamp
-        self.setStinkField()
+#        self.setStinkField()
 
     def smell(self, globalStinkField):
         # assign the globalStinkField's rgb values to each nostril
