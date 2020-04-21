@@ -6,7 +6,6 @@ green = (0, 255, 0)
 blue = (0, 0, 128)
 red = (255,0, 0)
 
-
 res = 1 # grid resolution!
 grid_x = np.linspace(0, boxWidth, boxWidth)
 grid_y = np.linspace(0, boxHeight, boxHeight)
@@ -29,16 +28,11 @@ class lamp:
     #   nomenclature:
     #   scent is what you detect where stink is what you are
 
-    def __init__(self, ID=0, parent=None, color=red, x=None, y=None, max_velo=3,
-                 length=15, height=12):
+    def __init__(self, color=red, x=None, y=None, max_velo=3,
+                 length=30, height=25):
         
         self.max_velocity = max_velo
 
-
-        self.ID = ID
-        self.foods_eaten = 0
-        self.parent = parent
-        
         if x == None:
             x_ = np.random.randint(0, boxWidth)
         else:
@@ -60,8 +54,6 @@ class lamp:
 
         self.length = length
         self.height = height
-
-        self.mass =  .4*self.length*( (.2*self.length + .5*self.height)/2 )
         
         self.maxEnergy = self.length*self.height
         self.energy = self.maxEnergy/2
@@ -77,15 +69,14 @@ class lamp:
         ### get current velocity to pass to rotate()
         oldVelocity = self.velocity
         
-        x_force = np.random.randint(-1,2)
         y_force = np.random.randint(-1,2) 
         force = [x_force, y_force]
         self.force = np.array(force)
         
         if ((self.velocity[0] + self.force[0]*dt)**2 + (self.velocity[1] + self.force[1]*dt)**2)**(1/2) < self.max_velocity:
             self.velocity = self.velocity + self.force*dt
-        f = 800
-        self.energy -=  (self.mass*(np.linalg.norm(self.velocity))**2)/f
+
+        self.energy -= np.linalg.norm(self.velocity)/20
 
         ### Make verticies such that they are around the origin of the lamp
         self.position = self.position + self.velocity*dt
@@ -94,13 +85,13 @@ class lamp:
         self.rotate() # also moves scent points
 
         ## Move the sinkfield of the lamp
-#        self.setStinkField()
+        # self.setStinkField()
 
     def smell(self, globalStinkField):
         # assign the globalStinkField's rgb values to each nostril
 
         # remove lamp's own scent from global stink field
-        newStinkField = np.add(globalStinkField,-self.stinkField)
+        # newStinkField = np.add(globalStinkField,-self.stinkField)
 
         # allign coordiantes of scent points 
         for i in range(0, len(self.scentPoints)):
@@ -108,7 +99,7 @@ class lamp:
             yMins = YS-self.scentPoints[i,1] 
             nearest = xMins**2 + yMins**2
             nearestIndicies= np.where(nearest == np.amin(nearest)) # returns indicies
-            self.scentMagnitude[i,:] = newStinkField[nearestIndicies[0], nearestIndicies[1], :] 
+            self.scentMagnitude[i,:] = globalStinkField[nearestIndicies[0], nearestIndicies[1], :] 
 
     def rotate(self):
         # (1) Get unit vector of the velocity for direction
@@ -127,7 +118,9 @@ class lamp:
             # this comes from the cross product to see if w rotate clwwise or cnt clckwise
             if third_component > 0:
                 angle *= -1
-
+            print("velocity: ", self.velocity)
+            print("Dot Product:", dotProd)
+            print("Angle: ", angle)
             ### Create rotation matrix
             rotationMatrix = np.array([[np.cos(angle), -np.sin(angle)], [np.sin(angle), np.cos(angle)]])
 
@@ -167,14 +160,14 @@ class lamp:
         # put us with the current position of the lamp
         self.scentPoints = np.floor(np.add(self._lampFrameScentPoints, self.position))
 
-    def setStinkField(self):
-        # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
-        # a three dimensional stink field lol
+    # def setStinkField(self):
+    #     # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
+    #     # a three dimensional stink field lol
 
-        self.stinkField = np.zeros(np.append(np.array(XS.shape), 3)) # intialize array
-        stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
-        for i in range(0,3):
-            self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
+    #     self.stinkField = np.zeros(np.append(np.array(XS.shape), 3)) # intialize array
+    #     stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
+    #     for i in range(0,3):
+    #         self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
 
     def setVertices(self):
         ###                  _
@@ -242,10 +235,11 @@ class Food:
 #     food_i = Food()
 #     food_colony.append(food_i)    
 #     totalStink = totalStink + food_colony[i].stinkField
-
 # # np.sum(food_colony[:].totalStink)
 # myLamp = lamp()
 # myLamp.move()
+
+# totalStink = totalStink + myLamp.stinkField
 
 # myLamp.smell(totalStink)
 
@@ -254,11 +248,11 @@ class Food:
 # print('scent magnitude:')
 # print(myLamp.scentMagnitude)
 
-# fig,ax=plt.subplots(1,1)
+# # fig,ax=plt.subplots(1,1)
 
-# cp = ax.contourf(XS, YS, totalStink[:,:,1])
-# fig.colorbar(cp) # Add a colorbar to a plot
-# ax.set_title('Filled Contours Plot')
-# ax.set_xlabel('x (cm)')
-# ax.set_ylabel('y (cm)')
-# plt.show()
+# # cp = ax.contourf(XS, YS, totalStink[:,:,1])
+# # fig.colorbar(cp) # Add a colorbar to a plot
+# # ax.set_title('Filled Contours Plot')
+# # ax.set_xlabel('x (cm)')
+# # ax.set_ylabel('y (cm)')
+# # plt.show()
