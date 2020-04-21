@@ -104,7 +104,7 @@ class lamp:
 
         # allign coordiantes of scent points 
         for i in range(0, len(self.scentPoints)):
-            xMins = XS-self.scentPoints[i,0] # get minimum distance from grid point
+            xMins = XS-self.scentPoints[i,0] # get minimum distance from grid point XS = 800x1000 gric
             yMins = YS-self.scentPoints[i,1] 
             nearest = xMins**2 + yMins**2
             nearestIndicies= np.where(nearest == np.amin(nearest)) # returns indicies
@@ -219,16 +219,16 @@ class Food:
         self.height = height
         self.length = length
         self.energy = self.height*self.length/2
-        self.setStinkField()
+        # self.setStinkField()
 
-    def setStinkField(self):
-        # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
-        # a three dimensional stink field lol
+    # def setStinkField(self):
+    #     # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
+    #     # a three dimensional stink field lol
 
-        self.stinkField = np.zeros(np.append(np.array(XS.shape), 3)) # intialize array
-        stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
-        for i in range(0,3):
-            self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
+    #     self.stinkField = np.zeros(np.append(np.array(XS.shape), 3)) # intialize array
+    #     stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
+    #     for i in range(0,3):
+    #         self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
 
     def respawn(self):
         x = np.random.randint(boxWidth/2, boxWidth)
