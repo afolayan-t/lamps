@@ -100,7 +100,7 @@ class lamp:
         # assign the globalStinkField's rgb values to each nostril
 
         # remove lamp's own scent from global stink field
-        newStinkField = np.add(globalStinkField,-self.stinkField)
+        # newStinkField = np.add(globalStinkField,-self.stinkField)
 
         # allign coordiantes of scent points 
         for i in range(0, len(self.scentPoints)):
@@ -108,7 +108,7 @@ class lamp:
             yMins = YS-self.scentPoints[i,1] 
             nearest = xMins**2 + yMins**2
             nearestIndicies= np.where(nearest == np.amin(nearest)) # returns indicies
-            self.scentMagnitude[i,:] = newStinkField[nearestIndicies[0], nearestIndicies[1], :] 
+            self.scentMagnitude[i,:] = globalStinkField[nearestIndicies[0], nearestIndicies[1], :] 
 
     def rotate(self):
         # (1) Get unit vector of the velocity for direction
@@ -167,14 +167,14 @@ class lamp:
         # put us with the current position of the lamp
         self.scentPoints = np.floor(np.add(self._lampFrameScentPoints, self.position))
 
-    def setStinkField(self):
-        # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
-        # a three dimensional stink field lol
+    # def setStinkField(self):
+    #     # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
+    #     # a three dimensional stink field lol
 
-        self.stinkField = np.zeros(np.append(np.array(XS.shape), 3)) # intialize array
-        stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
-        for i in range(0,3):
-            self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
+    #     self.stinkField = np.zeros(np.append(np.array(XS.shape), 3)) # intialize array
+    #     stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
+    #     for i in range(0,3):
+    #         self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
 
     def setVertices(self):
         ###                  _
