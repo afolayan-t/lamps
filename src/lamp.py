@@ -53,7 +53,7 @@ class lamp:
         
         xDot = np.random.randint(-2,3)#()-.5#(-1, 2)
         yDot = np.random.randint(-2,3)#()-.5#(-1, 2)
-        vel = [0,-1]#[xDot,yDot]
+        vel = [0,1]#[xDot,yDot]
         self.velocity = np.array(vel)
         
         self.color = color
@@ -66,7 +66,7 @@ class lamp:
         self.maxEnergy = self.length*self.height
         self.energy = self.maxEnergy/2
 
-        self.scentMagnitude = np.zeros([3,3]) # row is nostril, col is rgb
+        self.scentMagnitude = np.zeros([1])#np.zeros([3,3]) # row is nostril, col is rgb
         self.stinkRadius = 5
         self.setVertices()
         self.setScentPoints()
@@ -94,7 +94,7 @@ class lamp:
         self.rotate() # also moves scent points
 
         ## Move the sinkfield of the lamp
-#        self.setStinkField()
+        
 
     def smell(self, globalStinkField):
         # assign the globalStinkField's rgb values to each nostril
@@ -103,13 +103,27 @@ class lamp:
         # newStinkField = np.add(globalStinkField,-self.stinkField)
 
         # allign coordiantes of scent points 
-        for i in range(0, len(self.scentPoints)):
-            xMins = XS-self.scentPoints[i,0] # get minimum distance from grid point XS = 800x1000 gric
-            yMins = YS-self.scentPoints[i,1] 
-            nearest = xMins**2 + yMins**2
-            nearestIndicies= np.where(nearest == np.amin(nearest)) # returns indicies
-            self.scentMagnitude[i,:] = globalStinkField[nearestIndicies[0], nearestIndicies[1], :] 
+        #for i in range(0, len(self.scentPoints)):
+   #     xMins = XS-self.scentPoints[0,0] # get minimum distance from grid point XS = 800x1000 gric
+  #      yMins = YS-self.scentPoints[0,1] 
+ #       nearest = xMins**2 + yMins**2
+#        nearestIndicies= np.where(nearest == np.amin(nearest)) # returns indicies
+        #self.scentMagnitude = globalStinkField[nearestIndicies[0], nearestIndicies[1]]
+        x_eval = int(self.scentPoints[0,0])
+        y_eval = int(self.scentPoints[0,1])
+        
+        if self.scentPoints[0,0] >= boxWidth: 
+            x_eval = boxWidth-1
+        if self.scentPoints[0,0] <= 0:
+            x_eval = 0
+        if self.scentPoints[0,1] >= boxHeight:
+            y_eval = boxHeight-1
+        if self.scentPoints[0,1] <= 0:
+            y_eval = 0
+            
+        self.scentMagnitude = globalStinkField[y_eval, x_eval]
 
+            
     def rotate(self):
         # (1) Get unit vector of the velocity for direction
         # (2) Get the rotation matrix
@@ -151,8 +165,8 @@ class lamp:
         ### I should be which ever is easiest to give to Tolu for reinforcement learning
 
         ### set general scent points
-        nScentPoints = 3 # general scent points
-        nostralAngle = np.pi/3
+        nScentPoints = 1 # general scent points
+        nostralAngle = 0#np.pi/3
         theta = np.linspace(-nostralAngle, nostralAngle, nScentPoints)
         r = (self.height)/2
         scent_x = r*np.cos(theta)
@@ -167,14 +181,14 @@ class lamp:
         # put us with the current position of the lamp
         self.scentPoints = np.floor(np.add(self._lampFrameScentPoints, self.position))
 
-    # def setStinkField(self):
+#    def setStinkField(self):
     #     # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
     #     # a three dimensional stink field lol
 
-    #     self.stinkField = np.zeros(np.append(np.array(XS.shape), 3)) # intialize array
-    #     stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
-    #     for i in range(0,3):
-    #         self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
+        #               self.stinkField = np.zeros(np.append(np.array(XS.shape), 3)) # intialize array
+        #stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
+        #for i in range(0,3):
+        #    self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
 
     def setVertices(self):
         ###                  _
@@ -219,16 +233,17 @@ class Food:
         self.height = height
         self.length = length
         self.energy = self.height*self.length/2
-        # self.setStinkField()
+        self.setStinkField()
 
-    # def setStinkField(self):
-    #     # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
-    #     # a three dimensional stink field lol
+    def setStinkField(self):
+         # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
+        # a three dimensional stink field lol
 
-    #     self.stinkField = np.zeros(np.append(np.array(XS.shape), 3)) # intialize array
-    #     stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
-    #     for i in range(0,3):
-    #         self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
+         #self.stinkField = np.zeros(np.append(np.array(XS.shape)))#, 3)) # intialize array
+         stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
+         self.stinkField = self.color[0]*stinkPlane
+         #         for i in range(0,1):
+ #            self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
 
     def respawn(self):
         x = np.random.randint(boxWidth/2, boxWidth)

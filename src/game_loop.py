@@ -61,17 +61,24 @@ class Life:
     
         self.lamp_colony = []
         self.food_colony  = []
+        self.init_lamps()
+        self.init_foods()
 
+        self.init_stinkField()
+        
         #### FILE TO WRITE ALL DATA TO
         self.stats_file = self.init_simulation_data()
 
-    def dumpFoods(self, n):
-        for i in range(n):
+    def dumpFoods(self):
+        for i in range(self.foodResupply):
             food_i = Food()
             self.food_colony.append(food_i)
+            self.updateStinkField(food_i.stinkField)
+            
             if self.RUN_PYGAME:
                 self.renderFood(food_i)
-        
+
+                
     def lampSex(self, parent):
     
         x_ = parent.position[0]
@@ -223,123 +230,148 @@ class Life:
         death_string_to_write += str(lamp.foods_eaten)
         death_string_to_write += "\n"
         self.stats_file.write(death_string_to_write)
+
+
+    def init_stinkField(self):
+        totalStink = np.zeros([self.boxHeight,self.boxWidth])#, 3])
+        for i in range(self.numFoods):
+            totalStink = totalStink + self.food_colony[i].stinkField
+        self.globalStinkField = totalStink
+
+    def updateStinkField(self, food_field):
+        self.globalStinkField = np.add(self.globalStinkField, food_field)
+
+        
+        
+    def gameLoop(self):
+        num_lamps_alive = self.numLamps
+        
+        self.stats_file.write("greens: " + str(self.numLamps/2) + " reds: " + str(self.numLamps/2))
+        self.stats_file.write(" foods: " + str(self.numFoods) + " food regeneration/day: " + str(self.foodResupply)+ "\n\n")
+
+        initial_time = time.time()
+        num_iterations = 0
+        running = True
+        try:
+            while running:
+
+                # reset screen color to white
+                if self.RUN_PYGAME:
+                    self.screen.fill([255,255,255])
+                dead_lamps = []
+                # iterate through the lamps
+                for i in range(len(self.lamp_colony)):
+                    if self.RUN_PYGAME:
+                        self.renderLamp(self.lamp_colony[i])
+                    # update position of lamp
+                    self.lamp_colony[i].move()
+                    self.lamp_colony[i].smell(self.globalStinkField)
+                    # iterate through the foods (we should see if we can avoid O(n*m) here)
+                    eaten_foods = []
+                    for j in range(len(self.food_colony)):
+                        if self.RUN_PYGAME:
+                            self.renderFood(self.food_colony[j])
+                        if self.isCollision(self.lamp_colony[i], self.food_colony[j]):
+                            self.lamp_colony[i].foods_eaten += 1
+                            
+                            if self.lamp_colony[i].energy >= self.lamp_colony[i].maxEnergy:
+                                self.lamp_colony[i].energy = self.lamp_colony[i].maxEnergy
+    
+                            if self.lamp_colony[i].energy >= .8*self.lamp_colony[i].maxEnergy:
+                                ### string to put in txt file for data
+    
+                                
+                                self.lamp_colony[i].energy *= .5
+                                baby = self.lampSex(self.lamp_colony[i])
+    
+                                
+    
+    
+                                now = time.time()
+                                time_elapsed = round(now-initial_time, 3)
+    
+                                ##### WRITE BIRTH TO TXT FILE
+                                self.writeLampBirth(baby, time_elapsed)
+    
+                                
+                            self.lamp_colony[i].energy += self.food_colony[j].energy
+                            eaten_foods.append(self.food_colony[j])
+    
+                            
+                    for food_ in eaten_foods:
+                        self.updateStinkField(food_.stinkField)
+                        self.food_colony.remove(food_)
+    
+                    if self.lamp_colony[i].energy <= 0:
+                        #### WRITE-LAMP–DEATH(lamp_colony[i])
+                        ### string to put in txt file for data                                                                     
+                        dead_lamps.append(self.lamp_colony[i])
+                        
+                        # for plotting purposes
+    
+    
+                        now = time.time()
+                        time_elapsed = round(now-initial_time, 3)
+    
+    
+                        self.writeLampDeath(self.lamp_colony[i], time_elapsed)
+    
+    
+                            
+                for lamp_ in dead_lamps:
+                    self.lamp_colony.remove(lamp_)
+    
+    
+                if self.RUN_PYGAME:
+                    # if we click 'X' on the screen, stop rendering the screen
+                    for event in pygame.event.get():
+                        if event.type == pygame.QUIT:
+                            running = False
+        
+        
+                if len(self.lamp_colony) == 0:
+                    if self.RUN_PYGAME:
+                        self.endGame(self.screen)
+                    running = False
+        
+                num_iterations += 1
+                if num_iterations == 400:
+                    self.dumpFoods()
+                    num_iterations = 0
+        
+                if self.RUN_PYGAME:
+                    pygame.display.update()
+    
+    #            time.sleep(.2)
+        except KeyboardInterrupt:
+            print('interrupted!')
+            
+        if self.RUN_PYGAME:
+            pygame.display.quit() # quit the GUI
         
 
 
 def main():
 
     theGameOfLife = Life(boxWidth_=1000, boxHeight_=800)
-    
-    theGameOfLife.init_lamps()
-    theGameOfLife.init_foods()
-
-    initial_time = time.time()
-    
-    num_lamps_alive = theGameOfLife.numLamps
         
-    theGameOfLife.stats_file.write("greens: " + str(theGameOfLife.numLamps/2) + " reds: " + str(theGameOfLife.numLamps/2))
-    theGameOfLife.stats_file.write(" foods: " + str(theGameOfLife.numFoods) + " food regeneration/day: " + str(theGameOfLife.foodResupply)+ "\n\n")
+    theGameOfLife.gameLoop()
 
-    num_iterations = 0
-    running = True
-    try:
-        while running:
-            # reset screen color to white
-            if theGameOfLife.RUN_PYGAME:
-                theGameOfLife.screen.fill([255,255,255])
-            dead_lamps = []
-            # iterate through the lamps
-            for i in range(len(theGameOfLife.lamp_colony)):
-                if theGameOfLife.RUN_PYGAME:
-                    theGameOfLife.renderLamp(theGameOfLife.lamp_colony[i])
-                # update position of lamp
-                theGameOfLife.lamp_colony[i].move()
-                # iterate through the foods (we should see if we can avoid O(n*m) here)
-                eaten_foods = []
-                for j in range(len(theGameOfLife.food_colony)):
-                    if theGameOfLife.RUN_PYGAME:
-                        theGameOfLife.renderFood(theGameOfLife.food_colony[j])
-                    if theGameOfLife.isCollision(theGameOfLife.lamp_colony[i], theGameOfLife.food_colony[j]):
-                        theGameOfLife.lamp_colony[i].foods_eaten += 1
-                        
-                        if theGameOfLife.lamp_colony[i].energy >= theGameOfLife.lamp_colony[i].maxEnergy:
-                            theGameOfLife.lamp_colony[i].energy = theGameOfLife.lamp_colony[i].maxEnergy
-
-                        if theGameOfLife.lamp_colony[i].energy >= .8*theGameOfLife.lamp_colony[i].maxEnergy:
-                            ### string to put in txt file for data
-
-                            
-                            theGameOfLife.lamp_colony[i].energy *= .5
-                            baby = theGameOfLife.lampSex(theGameOfLife.lamp_colony[i])
-
-                            
+    fig,ax=plt.subplots(1,1)                                                      
 
 
-                            now = time.time()
-                            time_elapsed = round(now-initial_time, 3)
-
-                            ##### WRITE BIRTH TO TXT FILE
-                            theGameOfLife.writeLampBirth(baby, time_elapsed)
-
-                            
-                        theGameOfLife.lamp_colony[i].energy += theGameOfLife.food_colony[j].energy
-                        eaten_foods.append(theGameOfLife.food_colony[j])
-
-                        
-                for food_ in eaten_foods:
-                    theGameOfLife.food_colony.remove(food_)
-
-                if theGameOfLife.lamp_colony[i].energy <= 0:
-                    #### WRITE-LAMP–DEATH(lamp_colony[i])
-                    ### string to put in txt file for data                                                                     
-                    dead_lamps.append(theGameOfLife.lamp_colony[i])
-                    
-                    # for plotting purposes
-
-
-                    now = time.time()
-                    time_elapsed = round(now-initial_time, 3)
-
-
-                    theGameOfLife.writeLampDeath(theGameOfLife.lamp_colony[i], time_elapsed)
-
-
-                        
-            for lamp_ in dead_lamps:
-                theGameOfLife.lamp_colony.remove(lamp_)
-
-
-            if theGameOfLife.RUN_PYGAME:
-                # if we click 'X' on the screen, stop rendering the screen
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        running = False
+    grid_x = np.linspace(0, theGameOfLife.boxWidth, theGameOfLife.boxWidth)
+    grid_y = np.linspace(0, theGameOfLife.boxHeight, theGameOfLife.boxHeight)
+    (XS, YS) = np.meshgrid(grid_x,grid_y)
     
-    
-            if len(theGameOfLife.lamp_colony) == 0:
-                if theGameOfLife.RUN_PYGAME:
-                    theGameOfLife.endGame(theGameOfLife.screen)
-                running = False
-    
-            num_iterations += 1
-            if num_iterations == 400:
-                theGameOfLife.dumpFoods(theGameOfLife.foodResupply)
-                num_iterations = 0
-    
-            if theGameOfLife.RUN_PYGAME:
-                pygame.display.update()
-
-#            time.sleep(.2)
-    except KeyboardInterrupt:
-        print('interrupted!')
-
-
-
-
+    cp = ax.contourf(XS, YS, theGameOfLife.globalStinkField)                                   
+    fig.colorbar(cp) # Add a colorbar to a plot                                   
+    ax.set_title('Filled Contours Plot')                                          
+    ax.set_xlabel('x (cm)')                                                       
+    ax.set_ylabel('y (cm)')
+    ax.set_ylim(800,0)
+    plt.show()   
         
-
-    if theGameOfLife.RUN_PYGAME:
-        pygame.display.quit() # quit the GUI
-
+    
 if __name__== "__main__":
   main()
