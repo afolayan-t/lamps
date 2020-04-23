@@ -19,7 +19,7 @@ black = (0,0,0)
 
 class Life:
 
-    def __init__(self, boxWidth_=1000, boxHeight_=800):
+    def __init__(self, boxWidth_=1000, boxHeight_=800, numLamps_=40, numFoods_=65, foodResupply_=25, usePygame=False):
         # Establish size of environment window#
         self.boxWidth = boxWidth_
         self.boxHeight = boxHeight_
@@ -27,25 +27,33 @@ class Life:
         #### ID NUMBER TO ASSIGN TO LAMPS, WILL BE INCREASED BY WITH EACH NEW LAMP
         self.lamp_ID = 0
         
-        try:
-            self.numLamps = int(sys.argv[1])
-            self.numFoods = int(sys.argv[2])
-            self.foodResupply = int(sys.argv[3])
-        except:
-            # number of lamps in our colony
-            self.numLamps = int(input("number of lamps? "))
-            self.numFoods = int(input("number of foods? "))
-            self.foodResupply = int(input("number of foods per respawn? "))
+        #try:
+        #    self.numLamps = int(sys.argv[1])
+        #    self.numFoods = int(sys.argv[2])
+        #    self.foodResupply = int(sys.argv[3])
+        #except:
+        #    # number of lamps in our colony
+        self.numLamps = numLamps_
+        self.numFoods = numFoods_
+        self.foodResupply = foodResupply_
             
-        use_pygame = input("Use pygame?? (y/n) ")
-        while use_pygame != "y" and use_pygame != "n":
-            print("must reply 'y' or 'n'")
-            use_pygame = input("Use pygame?? (y/n):\n")
+#        use_pygame = input("Use pygame?? (y/n) ")
+#        while use_pygame != "y" and use_pygame != "n":
+#            print("must reply 'y' or 'n'")
+#            use_pygame = input("Use pygame?? (y/n):\n")
             
-        if use_pygame == 'y':
-            self.RUN_PYGAME = True
-        else:
-            self.RUN_PYGAME = False
+#        if use_pygame == 'y':
+#            self.RUN_PYGAME = True
+#        else:
+#            self.RUN_PYGAME = False
+        try:                                                                                                                                                                                               
+           usePygameArg = sys.argv[1]
+           if usePygameArg == "pg":
+               self.RUN_PYGAME = True
+           else:
+               self.RUN_PYGAME = False
+        except:   
+            self.RUN_PYGAME = usePygame
             
             
         if self.RUN_PYGAME:
@@ -86,7 +94,7 @@ class Life:
         velo_buff = 0
         length_buff = 0
         height_buff = 0
-        if parent.color == green:
+        if parent.canMutate:
             velo_buff =  np.random.uniform(low=-parent.max_velocity/3, high=parent.max_velocity/2)
             length_buff = np.random.randint(low=-1, high=3)
             height_buff = np.random.randint(low=-1, high=3)
@@ -97,7 +105,9 @@ class Life:
                     max_velo=parent.max_velocity+velo_buff,
                     length=parent.length+length_buff,
                     height=parent.height+height_buff,
-                    parent=parent)    
+                    parent=parent,
+                    canMutate_=parent.canMutate,
+                    isAI_=parent.isAI)    
         self.lamp_ID += 1
     
         if baby.length <= 0:
@@ -134,7 +144,7 @@ class Life:
     def renderFood(self, food):
         h = food.height
         l = food.length
-        pygame.draw.rect(self.screen, blue, (food.position[0], food.position[1], l,h), 0)
+        pygame.draw.rect(self.screen, food.color, (food.position[0], food.position[1], l,h), 0)
 
     def isCollision(self, obj1, obj2):
         #(x1, y1) = obj1.position
@@ -168,19 +178,28 @@ class Life:
         time.sleep(3)
 
     def init_lamps(self):
+        ### For testing AI
+        if self.numLamps == 2:
+            lamp_i = lamp(ID=self.lamp_ID, canMutate_=False, isAI_=True,color=blue)
+            self.lamp_ID += 1
+            self.lamp_colony.append(lamp_i)
+            lamp_j = lamp(ID=self.lamp_ID, canMutate_=False, isAI_=False,color=red)
+            self.lamp_ID += 1
+            self.lamp_colony.append(lamp_j)
             
-        for i in range(self.numLamps):
-            if i % 2 == 0:
-                lamp_i = lamp(ID=self.lamp_ID, color=green)
-                self.lamp_ID += 1
-                self.lamp_colony.append(lamp_i)
-            else:
-                lamp_i = lamp(ID=self.lamp_ID, color=red)
-                self.lamp_ID += 1
-                self.lamp_colony.append(lamp_i)
-            if self.RUN_PYGAME:
-                self.renderLamp(self.lamp_colony[i])
-
+        else:
+           for i in range(self.numLamps):    
+               if i % 2 == 0:
+                   lamp_i = lamp(ID=self.lamp_ID, canMutate_=True, color=green)
+                   self.lamp_ID += 1
+                   self.lamp_colony.append(lamp_i)
+               else:
+                   lamp_i = lamp(ID=self.lamp_ID, color=red)
+                   self.lamp_ID += 1
+                   self.lamp_colony.append(lamp_i)
+               if self.RUN_PYGAME:
+                   self.renderLamp(self.lamp_colony[i])
+   
     def init_foods(self):
         for j in range(self.numFoods):
             food_i = Food()
@@ -254,7 +273,7 @@ class Life:
         running = True
         try:
             while running:
-
+#                time.sleep(.3)
                 # reset screen color to white
                 if self.RUN_PYGAME:
                     self.screen.fill([255,255,255])
@@ -264,7 +283,8 @@ class Life:
                     if self.RUN_PYGAME:
                         self.renderLamp(self.lamp_colony[i])
                     # update position of lamp
-                    self.lamp_colony[i].move()
+                    act=np.random.randint(0, 5)
+                    self.lamp_colony[i].move(action=act)
                     self.lamp_colony[i].smell(self.globalStinkField)
                     # iterate through the foods (we should see if we can avoid O(n*m) here)
                     eaten_foods = []
@@ -348,29 +368,30 @@ class Life:
             
         if self.RUN_PYGAME:
             pygame.display.quit() # quit the GUI
-        
+            
+        self.stats_file.write("\n\n")
 
 
 def main():
 
-    theGameOfLife = Life(boxWidth_=1000, boxHeight_=800)
+    theGameOfLife = Life(numLamps_=2, boxWidth_=1000, boxHeight_=800)
         
     theGameOfLife.gameLoop()
 
     fig,ax=plt.subplots(1,1)                                                      
 
 
-    grid_x = np.linspace(0, theGameOfLife.boxWidth, theGameOfLife.boxWidth)
-    grid_y = np.linspace(0, theGameOfLife.boxHeight, theGameOfLife.boxHeight)
-    (XS, YS) = np.meshgrid(grid_x,grid_y)
+#    grid_x = np.linspace(0, theGameOfLife.boxWidth, theGameOfLife.boxWidth)
+#    grid_y = np.linspace(0, theGameOfLife.boxHeight, theGameOfLife.boxHeight)
+#    (XS, YS) = np.meshgrid(grid_x,grid_y)
     
-    cp = ax.contourf(XS, YS, theGameOfLife.globalStinkField)                                   
-    fig.colorbar(cp) # Add a colorbar to a plot                                   
-    ax.set_title('Filled Contours Plot')                                          
-    ax.set_xlabel('x (cm)')                                                       
-    ax.set_ylabel('y (cm)')
-    ax.set_ylim(800,0)
-    plt.show()   
+#    cp = ax.contourf(XS, YS, theGameOfLife.globalStinkField)                                   
+#    fig.colorbar(cp) # Add a colorbar to a plot                                   
+#    ax.set_title('Filled Contours Plot')                                          
+#    ax.set_xlabel('x (cm)')                                                       
+#    ax.set_ylabel('y (cm)')
+#    ax.set_ylim(800,0)
+#    plt.show()   
         
     
 if __name__== "__main__":

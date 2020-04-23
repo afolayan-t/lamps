@@ -30,7 +30,12 @@ class lamp:
     #   scent is what you detect where stink is what you are
 
     def __init__(self, ID=0, parent=None, color=red, x=None, y=None, max_velo=3,
-                 length=15, height=12):
+                 length=15, height=12, canMutate_=False, isAI_=False):
+
+        ### boolean value corresponding to whether or not the lamp is an AI or not
+        ### if isAI is False, it will do random walks
+        self.isAI = isAI_
+        self.canMutate = canMutate_
         
         self.max_velocity = max_velo
 
@@ -55,9 +60,14 @@ class lamp:
         yDot = np.random.randint(-2,3)#()-.5#(-1, 2)
         vel = [0,1]#[xDot,yDot]
         self.velocity = np.array(vel)
-        
-        self.color = color
 
+        if self.canMutate:
+            self.color = green
+        elif self.isAI:
+            self.color = blue
+        else:
+            self.color = color
+            
         self.length = length
         self.height = height
 
@@ -72,19 +82,48 @@ class lamp:
         self.setScentPoints()
         
         
-    def move(self):
-        
+    def move(self, action=0):
+        """
+            args: action
+            action: integer [0,4] which corresponds to which action will be called if the lamp is an AI agent
+                0: do nothing
+                1: speed up
+                2: speed down
+                3: apply force left
+                4: apply force right
+        """
         ### get current velocity to pass to rotate()
         oldVelocity = self.velocity
-        
-        x_force = np.random.randint(-1,2)
-        y_force = np.random.randint(-1,2) 
-        force = [x_force, y_force]
+        print('velo',self.velocity)
+        if self.isAI:
+            
+            if action == 0:
+                force = [0,0]
+                print('doing nothing')
+            elif action == 1:
+                print('speeding up')
+                force = self.speedUp(1)
+            elif action == 2:
+                print('speeding down')
+                force = self.speedDown(1)
+            elif action == 3:
+                print('turning left')
+                force = self.turnLeft(1)
+            elif action == 4:
+                print('turning right')
+                force = self.turnRight(1)
+                
+        else:
+            x_force = np.random.randint(-1,2)
+            y_force = np.random.randint(-1,2) 
+            force = [x_force, y_force]
+            
         self.force = np.array(force)
         
         if ((self.velocity[0] + self.force[0]*dt)**2 + (self.velocity[1] + self.force[1]*dt)**2)**(1/2) < self.max_velocity:
             self.velocity = self.velocity + self.force*dt
-        f = 800
+
+        f = 800 ### constant to dock energy loss by
         self.energy -=  (self.mass*(np.linalg.norm(self.velocity))**2)/f
 
         ### Make verticies such that they are around the origin of the lamp
@@ -94,8 +133,44 @@ class lamp:
         self.rotate() # also moves scent points
 
         ## Move the sinkfield of the lamp
-        
 
+    def speedUp(self, magnitude):
+        unit_vel = self.velocity/np.linalg.norm(self.velocity)
+        return magnitude*unit_vel
+    
+    def speedDown(self, magnitude):
+        unit_vel = self.velocity/np.linalg.norm(self.velocity)
+        angle_to_push = np.pi
+        rot_mat = self.getRotationMatrix(angle_to_push)
+        dot = magnitude*np.dot(unit_vel, rot_mat)
+        new_force = [dot[0,0],dot[0,1]]
+        print('force',new_force)
+        return new_force
+    
+    def turnLeft(self, magnitude):
+        unit_vel = self.velocity/np.linalg.norm(self.velocity)
+        angle_to_push = np.pi/2
+        rot_mat = self.getRotationMatrix(angle_to_push)
+        dot = magnitude*np.dot(unit_vel, rot_mat)
+        new_force = [dot[0,0],dot[0,1]]
+        print('force',new_force)
+        return new_force
+    
+    def turnRight(self, magnitude):
+        unit_vel = self.velocity/np.linalg.norm(self.velocity)
+        angle_to_push = -np.pi/2
+        rot_mat = self.getRotationMatrix(angle_to_push)
+        dot = magnitude*np.dot(unit_vel, rot_mat)
+        new_force = [dot[0,0],dot[0,1]]
+        print('force',new_force)
+        return new_force
+
+
+    def getRotationMatrix(self, radians):
+        c,s = np.cos(radians),np.sin(radians)
+        rot_mat = np.matrix([[c,-s],[s,c]])
+        return rot_mat
+    
     def smell(self, globalStinkField):
         # assign the globalStinkField's rgb values to each nostril
 
@@ -238,42 +313,12 @@ class Food:
     def setStinkField(self):
          # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
         # a three dimensional stink field lol
-
-         #self.stinkField = np.zeros(np.append(np.array(XS.shape)))#, 3)) # intialize array
          stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
          self.stinkField = self.color[0]*stinkPlane
-         #         for i in range(0,1):
- #            self.stinkField[:,:,i] =  self.color[i] * stinkPlane # magnitude of each scent is the color of the food
+
+
 
     def respawn(self):
         x = np.random.randint(boxWidth/2, boxWidth)
         y = np.random.randint(0, boxHeight)
         self.position = (x,y)
-
-
-# food_colony = []
-# totalStink = np.zeros([boxHeight,boxWidth, 3])
-# for i in range(0, 10):
-#     food_i = Food()
-#     food_colony.append(food_i)    
-#     totalStink = totalStink + food_colony[i].stinkField
-
-# # np.sum(food_colony[:].totalStink)
-# myLamp = lamp()
-# myLamp.move()
-
-# myLamp.smell(totalStink)
-
-# print('scent Coordinates:')
-# print(myLamp.scentPoints)
-# print('scent magnitude:')
-# print(myLamp.scentMagnitude)
-
-# fig,ax=plt.subplots(1,1)
-
-# cp = ax.contourf(XS, YS, totalStink[:,:,1])
-# fig.colorbar(cp) # Add a colorbar to a plot
-# ax.set_title('Filled Contours Plot')
-# ax.set_xlabel('x (cm)')
-# ax.set_ylabel('y (cm)')
-# plt.show()
