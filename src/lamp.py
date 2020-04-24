@@ -42,6 +42,7 @@ class lamp:
 
         self.ID = ID
         self.foods_eaten = 0
+        self.steps_taken = 0
         self.parent = parent
         
         if x == None:
@@ -94,23 +95,19 @@ class lamp:
         """
         ### get current velocity to pass to rotate()
         oldVelocity = self.velocity
-        print('velo',self.velocity)
+
         if self.isAI:
+#            print(state)
             
-            if action == 0:
+            if action == 0: # do nothing
                 force = [0,0]
-                print('doing nothing')
-            elif action == 1:
-                print('speeding up')
+            elif action == 1: # speed up
                 force = self.speedUp(1)
-            elif action == 2:
-                print('speeding down')
+            elif action == 2: # slow down
                 force = self.speedDown(1)
-            elif action == 3:
-                print('turning left')
+            elif action == 3: # turn left
                 force = self.turnLeft(1)
-            elif action == 4:
-                print('turning right')
+            elif action == 4: # turn right
                 force = self.turnRight(1)
                 
         else:
@@ -123,8 +120,9 @@ class lamp:
         if ((self.velocity[0] + self.force[0]*dt)**2 + (self.velocity[1] + self.force[1]*dt)**2)**(1/2) < self.max_velocity:
             self.velocity = self.velocity + self.force*dt
 
-        f = 800 ### constant to dock energy loss by
-        self.energy -=  (self.mass*(np.linalg.norm(self.velocity))**2)/f
+        f = 800 ### constant to dock energy by
+        dE = (self.mass*(np.linalg.norm(self.velocity))**2)/f
+        self.energy -=  dE
 
         ### Make verticies such that they are around the origin of the lamp
         self.position = self.position + self.velocity*dt
@@ -132,7 +130,17 @@ class lamp:
         ## rotate the lamp
         self.rotate() # also moves scent points
 
-        ## Move the sinkfield of the lamp
+        if self.isAI:
+            ###### Set state vecotor
+            ###### state vector consists of 4 elements:
+            ###### energy, x_velocity, y_velocity, scent_magnitude
+            state = [
+                self.energy,
+                self.velocity[0],
+                self.velocity[1],
+                self.scentMagnitude
+            ]
+        
 
     def speedUp(self, magnitude):
         unit_vel = self.velocity/np.linalg.norm(self.velocity)
@@ -144,7 +152,6 @@ class lamp:
         rot_mat = self.getRotationMatrix(angle_to_push)
         dot = magnitude*np.dot(unit_vel, rot_mat)
         new_force = [dot[0,0],dot[0,1]]
-        print('force',new_force)
         return new_force
     
     def turnLeft(self, magnitude):
@@ -153,7 +160,6 @@ class lamp:
         rot_mat = self.getRotationMatrix(angle_to_push)
         dot = magnitude*np.dot(unit_vel, rot_mat)
         new_force = [dot[0,0],dot[0,1]]
-        print('force',new_force)
         return new_force
     
     def turnRight(self, magnitude):
@@ -162,7 +168,6 @@ class lamp:
         rot_mat = self.getRotationMatrix(angle_to_push)
         dot = magnitude*np.dot(unit_vel, rot_mat)
         new_force = [dot[0,0],dot[0,1]]
-        print('force',new_force)
         return new_force
 
 
@@ -172,18 +177,7 @@ class lamp:
         return rot_mat
     
     def smell(self, globalStinkField):
-        # assign the globalStinkField's rgb values to each nostril
 
-        # remove lamp's own scent from global stink field
-        # newStinkField = np.add(globalStinkField,-self.stinkField)
-
-        # allign coordiantes of scent points 
-        #for i in range(0, len(self.scentPoints)):
-   #     xMins = XS-self.scentPoints[0,0] # get minimum distance from grid point XS = 800x1000 gric
-  #      yMins = YS-self.scentPoints[0,1] 
- #       nearest = xMins**2 + yMins**2
-#        nearestIndicies= np.where(nearest == np.amin(nearest)) # returns indicies
-        #self.scentMagnitude = globalStinkField[nearestIndicies[0], nearestIndicies[1]]
         x_eval = int(self.scentPoints[0,0])
         y_eval = int(self.scentPoints[0,1])
         

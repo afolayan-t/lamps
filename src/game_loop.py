@@ -1,5 +1,6 @@
 import numpy as np
 from lamp import lamp,Food
+from smart_lamp import DQNLamp
 import time
 import matplotlib.pyplot as plt
 import sys
@@ -76,6 +77,14 @@ class Life:
         
         #### FILE TO WRITE ALL DATA TO
         self.stats_file = self.init_simulation_data()
+
+
+        ##############################################################################
+        # PARAMETERS FOR AI STUFF
+        ##############################################################################
+        self.actionSpace = [0,1,2,3,4]
+
+        
 
     def dumpFoods(self):
         for i in range(self.foodResupply):
@@ -183,18 +192,18 @@ class Life:
             lamp_i = lamp(ID=self.lamp_ID, canMutate_=False, isAI_=True,color=blue)
             self.lamp_ID += 1
             self.lamp_colony.append(lamp_i)
-            lamp_j = lamp(ID=self.lamp_ID, canMutate_=False, isAI_=False,color=red)
+            lamp_j = lamp(ID=self.lamp_ID, canMutate_=True, isAI_=False,color=red)
             self.lamp_ID += 1
             self.lamp_colony.append(lamp_j)
             
         else:
            for i in range(self.numLamps):    
                if i % 2 == 0:
-                   lamp_i = lamp(ID=self.lamp_ID, canMutate_=True, color=green)
+                   lamp_i = lamp(ID=self.lamp_ID)
                    self.lamp_ID += 1
                    self.lamp_colony.append(lamp_i)
                else:
-                   lamp_i = lamp(ID=self.lamp_ID, color=red)
+                   lamp_i = lamp(ID=self.lamp_ID, isAI_=True, color=red)
                    self.lamp_ID += 1
                    self.lamp_colony.append(lamp_i)
                if self.RUN_PYGAME:
@@ -262,7 +271,7 @@ class Life:
 
         
         
-    def gameLoop(self):
+    def gameLoop(self, training=False):
         num_lamps_alive = self.numLamps
         
         self.stats_file.write("greens: " + str(self.numLamps/2) + " reds: " + str(self.numLamps/2))
@@ -374,25 +383,34 @@ class Life:
 
 def main():
 
-    theGameOfLife = Life(numLamps_=2, boxWidth_=1000, boxHeight_=800)
-        
-    theGameOfLife.gameLoop()
 
-    fig,ax=plt.subplots(1,1)                                                      
+    ####### State information:
+    # Energy
+    # X-velocity
+    # Y-velocity
+    # scent magnitude
+    #######
+    num_episodes = 600
+    my_agent = DQN()
+    total_reward = []
+    steps = []
+
+    for episode in range(num_episodes):
+        print("======================================================")
+        print("Processing episode: " + str(episode))
+        print("======================================================")
+        time_start = time.time()
+        cur_state = np.array([0,0,0,0])
+        episode_reward = 0
+        step = 0
+
+        theGameOfLife = Life(numLamps_=20, boxWidth_=1000, boxHeight_=800)
+        #### MAKE CHANGES IN gameLoop to handle 
+        theGameOfLife.gameLoop(training=True)
 
 
-#    grid_x = np.linspace(0, theGameOfLife.boxWidth, theGameOfLife.boxWidth)
-#    grid_y = np.linspace(0, theGameOfLife.boxHeight, theGameOfLife.boxHeight)
-#    (XS, YS) = np.meshgrid(grid_x,grid_y)
+
     
-#    cp = ax.contourf(XS, YS, theGameOfLife.globalStinkField)                                   
-#    fig.colorbar(cp) # Add a colorbar to a plot                                   
-#    ax.set_title('Filled Contours Plot')                                          
-#    ax.set_xlabel('x (cm)')                                                       
-#    ax.set_ylabel('y (cm)')
-#    ax.set_ylim(800,0)
-#    plt.show()   
-        
     
 if __name__== "__main__":
   main()
