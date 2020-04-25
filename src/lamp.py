@@ -127,6 +127,8 @@ class lamp:
         ### Make verticies such that they are around the origin of the lamp
         self.position = self.position + self.velocity*dt
 
+        self.steps_taken += 1
+        
         ## rotate the lamp
         self.rotate() # also moves scent points
 
@@ -134,12 +136,7 @@ class lamp:
             ###### Set state vecotor
             ###### state vector consists of 4 elements:
             ###### energy, x_velocity, y_velocity, scent_magnitude
-            state = [
-                self.energy,
-                self.velocity[0],
-                self.velocity[1],
-                self.scentMagnitude
-            ]
+            print(self.steps_taken)
         
 
     def speedUp(self, magnitude):

@@ -83,7 +83,11 @@ class Life:
         # PARAMETERS FOR AI STUFF
         ##############################################################################
         self.actionSpace = [0,1,2,3,4]
-
+        #self.maxSteps = 15000
+        self.maxFoodsToEat = 25
+        self.done = False
+        self.agent = DQNLamp()
+        ##############################################################################
         
 
     def dumpFoods(self):
@@ -198,7 +202,7 @@ class Life:
             
         else:
            for i in range(self.numLamps):    
-               if i % 2 == 0:
+               if i != 0:
                    lamp_i = lamp(ID=self.lamp_ID)
                    self.lamp_ID += 1
                    self.lamp_colony.append(lamp_i)
@@ -269,6 +273,59 @@ class Life:
     def updateStinkField(self, food_field):
         self.globalStinkField = np.add(self.globalStinkField, food_field)
 
+
+    def stepAI(self, lamp):
+        """
+        stepAI(lamp): this function takes in an AI agent lamp, moves it, analyzes the state
+                      and returns this information
+        arg: lamp that is an AI
+        rerurns:
+                -state: array-like, contains lamp energy,x_velo,y_velo,scentMagnitude
+                -reward: int, how much reward we give based on its previous actions
+                -done:   boolean, is game over?(i.e has lamp taken max steps or died?)
+        """
+
+        current_state = [
+            lamp.energy,
+            lamp.velocity[0],
+            lamp.velocity[1],
+            lamp.scentMagnitude
+        ]
+        current_state = np.array(current_state)
+
+        ##### CALL act() function of 
+        action = self.agent.act(current_state)
+
+        lamp.move(action=action)
+        lamp.smell(self.globalStinkField)
+        new_state = [
+            lamp.energy,
+            lamp.velocity[0],
+            lamp.velocity[1],
+            lamp.scentMagnitude
+        ]
+
+        ######## Update reward for:
+        # losing energy (subtract dE)
+        # dying (subtract 150)
+        # eating (add 15)
+        # reproducing (add 50)
+        reward =  0
+
+        #for j in range(len(self.food_colony)):
+         #   if
+
+            
+        if lamp.foods_eaten > self.maxFoodsToEat:
+            ## we make done an attribute of game_loop, set true if lamp died
+            ## or reached max steps
+
+            #### DO SOMETHING HERE TO INDICATE WE WON THE GAME
+            reward += 100 ### we won :D
+            self.done = True
+
+        return new_state,reward
+        
         
         
     def gameLoop(self, training=False):
@@ -291,40 +348,40 @@ class Life:
                 for i in range(len(self.lamp_colony)):
                     if self.RUN_PYGAME:
                         self.renderLamp(self.lamp_colony[i])
-                    # update position of lamp
-                    act=np.random.randint(0, 5)
-                    self.lamp_colony[i].move(action=act)
-                    self.lamp_colony[i].smell(self.globalStinkField)
+
+                    # if lamp is an AI, call our step functiton
+                    if self.lamp_colony[i].isAI:
+                        self.stepAI(self.lamp_colony[i])
+                    else:
+                        # update position of lamp
+                        self.lamp_colony[i].move()
                     # iterate through the foods (we should see if we can avoid O(n*m) here)
                     eaten_foods = []
                     for j in range(len(self.food_colony)):
                         if self.RUN_PYGAME:
                             self.renderFood(self.food_colony[j])
+                        ## isCollision means that the laamp has eaten
                         if self.isCollision(self.lamp_colony[i], self.food_colony[j]):
                             self.lamp_colony[i].foods_eaten += 1
+                            self.lamp_colony[i].energy += self.food_colony[j].energy
+                            eaten_foods.append(self.food_colony[j])
                             
                             if self.lamp_colony[i].energy >= self.lamp_colony[i].maxEnergy:
                                 self.lamp_colony[i].energy = self.lamp_colony[i].maxEnergy
     
                             if self.lamp_colony[i].energy >= .8*self.lamp_colony[i].maxEnergy:
-                                ### string to put in txt file for data
-    
-                                
+
                                 self.lamp_colony[i].energy *= .5
                                 baby = self.lampSex(self.lamp_colony[i])
-    
-                                
-    
     
                                 now = time.time()
                                 time_elapsed = round(now-initial_time, 3)
     
                                 ##### WRITE BIRTH TO TXT FILE
-                                self.writeLampBirth(baby, time_elapsed)
-    
+                                self.writeLampBirth(baby, time_elapsed)    
                                 
-                            self.lamp_colony[i].energy += self.food_colony[j].energy
-                            eaten_foods.append(self.food_colony[j])
+#                            self.lamp_colony[i].energy += self.food_colony[j].energy
+#                            eaten_foods.append(self.food_colony[j])
     
                             
                     for food_ in eaten_foods:
@@ -380,6 +437,27 @@ class Life:
             
         self.stats_file.write("\n\n")
 
+    def reset(self):
+        self.lamp_ID = 0
+            
+        if self.RUN_PYGAME:
+            # intialize screen object 
+            self.screen = pygame.display.set_mode((self.boxWidth, self.boxHeight))
+            #background = pygame.Surface((boxWidth, boxHeight))
+            self.screen.fill(white)
+    
+            # sets the title for the window
+            pygame.display.set_caption('Environment')
+
+            pygame.init()
+    
+        self.lamp_colony = []
+        self.food_colony  = []
+        self.init_lamps()
+        self.init_foods()
+
+        self.init_stinkField()
+
 
 def main():
 
@@ -391,10 +469,15 @@ def main():
     # scent magnitude
     #######
     num_episodes = 600
-    my_agent = DQN()
+    my_agent = DQNLamp()
+    print(my_agent.epsilon)
     total_reward = []
     steps = []
-
+    theGameOfLife = Life(numLamps_=20, numFoods_=60, foodResupply_=0,boxWidth_=1000, boxHeight_=800)
+    #### MAKE CHANGES IN gameLoop to handle 
+    theGameOfLife.gameLoop(training=False)
+    theGameOfLife.reset()
+    theGameOfLife.gameLoop(training=False)
     for episode in range(num_episodes):
         print("======================================================")
         print("Processing episode: " + str(episode))
