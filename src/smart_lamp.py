@@ -34,7 +34,8 @@ class DQNLamp:
         model = tf.keras.Sequential()
         ## there are 4 parameters in our states: energy,x&y velocity,scentMagnitude
         state_shape = (self.numStateParameters,)
-        model.add(tf.keras.layers.Dense(150, input_shape=state_shape, activation="relu"))
+        model.add(tf.keras.layers.Flatten())
+        model.add(tf.keras.layers.Dense(150, input_dim=1, activation="relu"))
         model.add(tf.keras.layers.Dense(50, activation="relu"))
         model.add(tf.keras.layers.Dense(len(self.actionSpace)))
         model.compile(loss="mean_squared_error", optimizer=tf.keras.optimizers.Adam(lr=self.learning_rate))
@@ -57,12 +58,17 @@ class DQNLamp:
         all_dones = np.reshape([x[4] for x in samples], (batch_size, ))
 
         # make predictions of future rewards based on the batch of new states that we obtained
-        future_discounted_rewards = np.array(self.model.predict_on_batch(all_new_states))
 
+        future_discounted_rewards = np.array(self.model.predict_on_batch(all_new_states))
+        print(future_discounted_rewards)
+        
         # figure out which reward is best & pick biggere one
         future_max_reward = np.amax(future_discounted_rewards, axis=1)
 
         ### add future max reward for each time the game won't be over to our current total reward
+
+
+
         updated_future_discounted_rewards =  all_rewards + self.gamma*future_max_reward*(~all_dones)
 
         all_targets = np.array(self.model.predict_on_batch(all_states)) # get us predicted rewards
@@ -82,7 +88,11 @@ class DQNLamp:
             random_action = random.sample(self.actionSpace,1)[0]
             return random_action
         else:
-            print(state.shape)
+
+            print(state)
+            tf.keras.backend.reshape(state, [-1])#shape=(4,)
+
+            
             return np.argmax(self.model.predict(state)[0])
 
     def save_model(self, fn):

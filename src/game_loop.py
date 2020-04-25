@@ -87,6 +87,7 @@ class Life:
         self.maxFoodsToEat = 25
         self.done = False
         self.agent = DQNLamp()
+        self.episode_reward = 0
         ##############################################################################
         
 
@@ -291,20 +292,25 @@ class Life:
             lamp.velocity[1],
             lamp.scentMagnitude
         ]
-        current_state = np.array(current_state)
-
+        current_state = np.array(current_state, dtype=np.float32)
+#        current_state.reshape(1,self.agent.numStateParameters)
+        
         ##### CALL act() function of 
         action = self.agent.act(current_state)
 
         lamp.move(action=action)
         lamp.smell(self.globalStinkField)
+
+        ### get updated state
         new_state = [
             lamp.energy,
             lamp.velocity[0],
             lamp.velocity[1],
             lamp.scentMagnitude
         ]
-
+        new_state = np.array(new_state, dtype=np.float32)
+ #       new_state.reshape(1,self.agent.numStateParameters)
+        
         ######## Update reward for:
         # losing energy (subtract dE)
         # dying (subtract 150)
@@ -323,6 +329,13 @@ class Life:
             #### DO SOMETHING HERE TO INDICATE WE WON THE GAME
             reward += 100 ### we won :D
             self.done = True
+
+
+        self.agent.remember(current_state, action, reward, new_state, self.done)
+        self.agent.replay()
+
+        self.episode_reward += reward
+        # maybe  incrememnt step too
 
         return new_state,reward
         
@@ -459,6 +472,9 @@ class Life:
         self.init_stinkField()
 
 
+        ############## AI STUFF TO RESET #############
+        self.episode_reward = 0
+        
 def main():
 
 
