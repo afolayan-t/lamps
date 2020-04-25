@@ -121,8 +121,8 @@ class lamp:
             self.velocity = self.velocity + self.force*dt
 
         f = 800 ### constant to dock energy by
-        dE = (self.mass*(np.linalg.norm(self.velocity))**2)/f
-        self.energy -=  dE
+        dE = -(self.mass*(np.linalg.norm(self.velocity))**2)/f
+        self.energy +=  dE
 
         ### Make verticies such that they are around the origin of the lamp
         self.position = self.position + self.velocity*dt
@@ -133,10 +133,13 @@ class lamp:
         self.rotate() # also moves scent points
 
         if self.isAI:
+            ### AI's need this info for reward
+            return dE
             ###### Set state vecotor
             ###### state vector consists of 4 elements:
             ###### energy, x_velocity, y_velocity, scent_magnitude
-            print(self.steps_taken)
+            #print(self.steps_taken)
+            
         
 
     def speedUp(self, magnitude):

@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import sys
 import datetime
 import pygame
+import pandas as pd
+import tensorflow as tf
 
 # Time that we will sleep each iteration
 timeStep = .2
@@ -16,7 +18,7 @@ blue = (0, 0, 128)
 red = (255, 0, 0)
 black = (0,0,0)
 
-
+model_path = "/Users/ben/Documents/GitRepos/lamps/models/"
 
 class Life:
 
@@ -87,7 +89,9 @@ class Life:
         self.maxFoodsToEat = 25
         self.done = False
         self.agent = DQNLamp()
+        self.current_reward = 0
         self.episode_reward = 0
+        self.episode_steps = 0
         ##############################################################################
         
 
@@ -121,7 +125,7 @@ class Life:
                     height=parent.height+height_buff,
                     parent=parent,
                     canMutate_=parent.canMutate,
-                    isAI_=parent.isAI)    
+                    )#isAI_=parent.isAI)    
         self.lamp_ID += 1
     
         if baby.length <= 0:
@@ -292,13 +296,13 @@ class Life:
             lamp.velocity[1],
             lamp.scentMagnitude
         ]
-        current_state = np.array(current_state, dtype=np.float32)
+        self.current_state = np.array(current_state, dtype=np.float32)
 #        current_state.reshape(1,self.agent.numStateParameters)
         
         ##### CALL act() function of 
-        action = self.agent.act(current_state)
+        self.current_action = self.agent.act(self.current_state)
 
-        lamp.move(action=action)
+        dE = lamp.move(action=self.current_action)/50
         lamp.smell(self.globalStinkField)
 
         ### get updated state
@@ -308,40 +312,67 @@ class Life:
             lamp.velocity[1],
             lamp.scentMagnitude
         ]
-        new_state = np.array(new_state, dtype=np.float32)
+        self.new_state = np.array(new_state, dtype=np.float32)
  #       new_state.reshape(1,self.agent.numStateParameters)
         
         ######## Update reward for:
-        # losing energy (subtract dE)
-        # dying (subtract 150)
+        # losing energy (add dE)
+        # dying (subtract 200)
         # eating (add 15)
         # reproducing (add 50)
-        reward =  0
+        self.current_reward =  0
 
-        #for j in range(len(self.food_colony)):
-         #   if
+        ####### change in energy #######
+        self.current_reward += dE
+        ################################
 
-            
-        if lamp.foods_eaten > self.maxFoodsToEat:
-            ## we make done an attribute of game_loop, set true if lamp died
-            ## or reached max steps
-
-            #### DO SOMETHING HERE TO INDICATE WE WON THE GAME
-            reward += 100 ### we won :D
+        ###### dying ######
+        if lamp.energy <= 0:
+            self.current_reward -= 200
             self.done = True
+        ###################
+        ########### beating the round ###########
+        if lamp.foods_eaten >= self.maxFoodsToEat:
+            #reward += 100 ### we won :D
+            print("won")
+            self.done = True
+        #########################################
 
+        ############## eating & reproducing  ###################
+        #for j in range(len(self.food_colony)):
+        #    ## isCollision means that the laamp has eaten
+        #    if self.isCollision(lamp, self.food_colony[j]):
+        #        reward += 25
+        #        print("ate", lamp.foods_eaten)
+        #        if lamp.energy >= .8*lamp.maxEnergy:
+        #            print("reproduce")
+        #            reward += 50
+        ########################################################
+        
 
-        self.agent.remember(current_state, action, reward, new_state, self.done)
+    ####
+    def writeAIStats(self, lamp):
+        self.agent.remember(self.current_state, self.current_action, self.current_reward, self.new_state, self.done)
         self.agent.replay()
 
-        self.episode_reward += reward
-        # maybe  incrememnt step too
+        
+        self.episode_reward += self.current_reward
+        self.episode_steps += 1
 
-        return new_state,reward
         
+        if lamp.foods_eaten >= self.maxFoodsToEat:
+            return True,lamp.foods_eaten
+        else:
+            return False,lamp.foods_eaten
+
         
+        #### reset reward after each step
+        #self.current_reward = 0
         
     def gameLoop(self, training=False):
+        
+        beatGame = False
+        
         num_lamps_alive = self.numLamps
         
         self.stats_file.write("greens: " + str(self.numLamps/2) + " reds: " + str(self.numLamps/2))
@@ -352,6 +383,8 @@ class Life:
         running = True
         try:
             while running:
+                if self.done:
+                    break
 #                time.sleep(.3)
                 # reset screen color to white
                 if self.RUN_PYGAME:
@@ -363,7 +396,7 @@ class Life:
                         self.renderLamp(self.lamp_colony[i])
 
                     # if lamp is an AI, call our step functiton
-                    if self.lamp_colony[i].isAI:
+                    if self.lamp_colony[i].isAI and training:
                         self.stepAI(self.lamp_colony[i])
                     else:
                         # update position of lamp
@@ -375,6 +408,11 @@ class Life:
                             self.renderFood(self.food_colony[j])
                         ## isCollision means that the laamp has eaten
                         if self.isCollision(self.lamp_colony[i], self.food_colony[j]):
+
+                            if self.lamp_colony[i].isAI and training:
+                                print("ate, ", self.lamp_colony[i].foods_eaten)
+                                self.current_reward += 25
+                            
                             self.lamp_colony[i].foods_eaten += 1
                             self.lamp_colony[i].energy += self.food_colony[j].energy
                             eaten_foods.append(self.food_colony[j])
@@ -384,6 +422,10 @@ class Life:
     
                             if self.lamp_colony[i].energy >= .8*self.lamp_colony[i].maxEnergy:
 
+                                if self.lamp_colony[i].isAI and training:
+                                    print("reproduced")
+                                    self.current_reward += 50
+                                
                                 self.lamp_colony[i].energy *= .5
                                 baby = self.lampSex(self.lamp_colony[i])
     
@@ -392,11 +434,12 @@ class Life:
     
                                 ##### WRITE BIRTH TO TXT FILE
                                 self.writeLampBirth(baby, time_elapsed)    
-                                
-#                            self.lamp_colony[i].energy += self.food_colony[j].energy
-#                            eaten_foods.append(self.food_colony[j])
-    
-                            
+
+
+                    if self.lamp_colony[i].isAI and training:
+                        beatGame,foods_eaten = self.writeAIStats(self.lamp_colony[i])
+                        
+
                     for food_ in eaten_foods:
                         self.updateStinkField(food_.stinkField)
                         self.food_colony.remove(food_)
@@ -450,6 +493,13 @@ class Life:
             
         self.stats_file.write("\n\n")
 
+        if beatGame and training:
+            return beatGame, foods_eaten
+        elif training:
+            return beatGame, foods_eaten
+        else:
+            return False, 0
+
     def reset(self):
         self.lamp_ID = 0
             
@@ -474,6 +524,8 @@ class Life:
 
         ############## AI STUFF TO RESET #############
         self.episode_reward = 0
+        self.episode_steps = 0
+        self.done = False
         
 def main():
 
@@ -485,27 +537,59 @@ def main():
     # scent magnitude
     #######
     num_episodes = 600
-    my_agent = DQNLamp()
-    print(my_agent.epsilon)
     total_reward = []
     steps = []
-    theGameOfLife = Life(numLamps_=20, numFoods_=60, foodResupply_=0,boxWidth_=1000, boxHeight_=800)
+    successes = []
+    theGameOfLife = Life(numLamps_=25, numFoods_=60, foodResupply_=20,boxWidth_=1000, boxHeight_=800)
     #### MAKE CHANGES IN gameLoop to handle 
-    theGameOfLife.gameLoop(training=False)
-    theGameOfLife.reset()
-    theGameOfLife.gameLoop(training=False)
-    for episode in range(num_episodes):
-        print("======================================================")
-        print("Processing episode: " + str(episode))
-        print("======================================================")
-        time_start = time.time()
-        cur_state = np.array([0,0,0,0])
-        episode_reward = 0
-        step = 0
 
-        theGameOfLife = Life(numLamps_=20, boxWidth_=1000, boxHeight_=800)
-        #### MAKE CHANGES IN gameLoop to handle 
-        theGameOfLife.gameLoop(training=True)
+        
+    try:    
+        for episode in range(num_episodes):
+            print("======================================================")
+            print("Processing episode: " + str(episode))
+            print("======================================================")
+            time_start = time.time()
+            cur_state = np.array([0,0,0,0])
+            beatGame,foods_eaten = theGameOfLife.gameLoop(training=True)
+    
+            #### update stats
+            total_reward.append(theGameOfLife.episode_reward)
+            steps.append(theGameOfLife.episode_steps)
+            successes.append(beatGame)
+            print("--------------------------------------------------------")
+            print("Episode: " + str(int(episode)) + " completed in: " + str(theGameOfLife.episode_steps) + " steps.")
+            print("--------------------------------------------------------")
+
+            if beatGame:
+                print("Successfully completed in episode: " + str(episode) + " with a total reward of: " + str(episode_reward))
+                theGameOfLife.agent.save_model(model_path + "episode-{}_model_success.h5".format(episode))
+            else:
+                print("Failed to complete episode: " + str(episode) + " with a total reward of: " + str(theGameOfLife.episode_reward))
+                print("We ate " + str(foods_eaten) + " foods")
+                if episode % 10 == 0:
+                    theGameOfLife.agent.save_model(model_path + "episode-{}_model_failure.h5".format(episode))
+                    
+            time_end = time.time()
+            tf.keras.backend.clear_session()
+            print("Processing episode: " + str(episode) + " took: " + str(int(time_end - time_start)) + " seconds. Avg running reward is: " + str(np.array(total_reward)[-100:].mean()))
+            
+            theGameOfLife.reset()
+    
+    except KeyboardInterrupt:
+            print('interrupted!')
+
+    results_df = pd.DataFrame(total_reward, columns = ['episode_reward'])
+    results_df['steps_taken'] = steps
+    results_df['Success'] = successes
+    results_df['average_running_reward'] = results_df['episode_reward'].rolling(window=100).mean()
+
+    results_df.to_csv(theGameOfLife.agent.model_path+"training_results.csv")
+
+    
+
+        
+        
 
 
 
