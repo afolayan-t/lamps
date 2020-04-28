@@ -44,6 +44,12 @@ class lamp:
         self.foods_eaten = 0
         self.steps_taken = 0
         self.parent = parent
+
+
+        #### for if we are stuck at a wall; 0 = not at wall
+        #### 1 = top, 2 = bottom, 3 = left, 4 = right
+        if self.isAI:
+            self.at_wall = 0
         
         if x == None:
             x_ = np.random.randint(0, boxWidth)
@@ -59,7 +65,7 @@ class lamp:
         
         xDot = np.random.randint(-2,3)#()-.5#(-1, 2)
         yDot = np.random.randint(-2,3)#()-.5#(-1, 2)
-        vel = [0,1]#[xDot,yDot]
+        vel = [1,0]#[xDot,yDot]
         self.velocity = np.array(vel)
 
         if self.canMutate:
@@ -98,7 +104,6 @@ class lamp:
 
         if self.isAI:
 #            print(state)
-            
             if action == 0: # do nothing
                 force = [0,0]
             elif action == 1: # speed up
@@ -109,7 +114,7 @@ class lamp:
                 force = self.turnLeft(1)
             elif action == 4: # turn right
                 force = self.turnRight(1)
-                
+
         else:
             x_force = np.random.randint(-1,2)
             y_force = np.random.randint(-1,2) 
@@ -121,12 +126,32 @@ class lamp:
             self.velocity = self.velocity + self.force*dt
 
         f = 800 ### constant to dock energy by
-        dE = -(self.mass*(np.linalg.norm(self.velocity))**2)/f
+        dE = -(self.mass*(np.linalg.norm(self.velocity))**2)/f - dt/50 ## last term so that lamp dies if it stops
         self.energy +=  dE
 
         ### Make verticies such that they are around the origin of the lamp
         self.position = self.position + self.velocity*dt
 
+        ### make lamps spawn at other side of the box
+        if self.position[0] >= boxWidth: #### right
+            self.position[0] = 0#boxWidth
+#            self.velocity[0] = 0
+#            self.at_wall = 4
+        elif self.position[0] < 0:
+            self.position[0] = boxWidth#0
+#            self.velocity[0] = 0
+#            self.at_wall = 3
+        elif self.position[1] >= boxHeight:
+            self.position[1] =  0#boxHeight
+#            self.velocity[1] = 0
+#            self.at_wall = 2
+        elif self.position[1] < 0:
+            self.position[1] = boxHeight#0
+#            self.velocity[1] = 0
+#            self.at_wall = 1
+        else:
+            self.at_wall = 0
+            
         self.steps_taken += 1
         
         ## rotate the lamp
@@ -143,8 +168,23 @@ class lamp:
         
 
     def speedUp(self, magnitude):
+ #       if self.at_wall == 0:
         unit_vel = self.velocity/np.linalg.norm(self.velocity)
-        return magnitude*unit_vel
+        force = magnitude*unit_vel
+ #       elif self.at_wall == 1: ### top wall
+ #           force = [0,-1]
+ #           force = [x*magnitude for x in force]
+ #       elif self.at_wall == 2: ### bottom wall
+ #           force = [0,1]
+ #           force = [x*magnitude for x in force]
+ #       elif self.at_wall == 3: ### left wall
+ #           force = [-1,0]
+ #           force = [x*magnitude for x in force]
+ #       elif self.at_wall == 4: ### right wall
+ #           force = [1,0]
+        force = [x*magnitude for x in force]
+        return force
+    
     
     def speedDown(self, magnitude):
         unit_vel = self.velocity/np.linalg.norm(self.velocity)
