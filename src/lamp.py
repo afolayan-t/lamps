@@ -347,7 +347,7 @@ class Food:
     def setStinkField(self):
          # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
         # a three dimensional stink field lol
-         stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ** (1/2)))
+         stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ))# ** (1/2)))
          self.stinkField = self.color[0]*stinkPlane
 
 
