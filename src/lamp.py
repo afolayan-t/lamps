@@ -83,7 +83,7 @@ class lamp:
         self.maxEnergy = self.length*self.height
         self.energy = self.maxEnergy/2
 
-        self.scentMagnitude = np.zeros([1])#np.zeros([3,3]) # row is nostril, col is rgb
+        self.scentMagnitude = np.zeros([1, 2])#np.zeros([3,3]) # row is nostril, col is rgb
         self.stinkRadius = 5
         self.setVertices()
         self.setScentPoints()
@@ -274,8 +274,8 @@ class lamp:
         ### I should be which ever is easiest to give to Tolu for reinforcement learning
 
         ### set general scent points
-        nScentPoints = 1 # general scent points
-        nostralAngle = 0#np.pi/3
+        nScentPoints = 2 # general scent points
+        nostralAngle = np.pi/4
         theta = np.linspace(-nostralAngle, nostralAngle, nScentPoints)
         r = (self.height)/2
         scent_x = r*np.cos(theta)
@@ -347,8 +347,15 @@ class Food:
     def setStinkField(self):
          # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
         # a three dimensional stink field lol
-         stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ))# ** (1/2)))
-         self.stinkField = self.color[0]*stinkPlane
+        stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ))# ** (1/2)))
+        self.stinkField = self.color[0]*stinkPlane
+        # set boundaries of stink field equal to zero
+        self.stinkField[0,:] = 0
+        self.stinkField[-1,:] = 0
+        self.stinkField[:,0] = 0
+        self.stinkField[:,-1] = 0
+
+
 
 
 
