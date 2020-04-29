@@ -1,0 +1,30 @@
+
+
+
+
+rev1:
+die =		-200
+eat =		+25
+reproduce = 	+50
+move = 	  	-dE/50
+walls: none, stink field, broken
+
+rev2
+
+
+
+
+
+rev4 (04/27): 300 eps
+die = -200
+eat = +100
+repro = +150
+move =          -dE/50
+walls: yes, -3 for each frame on walll
+
+rev5 (04/28): 1000 eps
+die = -200
+eat = +100
+repro =	+150
+move =          -dE/50
+walls: pop out on other side when you cross extremes

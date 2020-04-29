@@ -19,7 +19,7 @@ blue = (0, 0, 128)
 red = (255, 0, 0)
 black = (0,0,0)
 
-model_path = "/Users/ben/Documents/GitRepos/lamps/models/rev4/"
+model_path = "/Users/ben/Documents/GitRepos/lamps/models/rev5/"
 
 class Life:
 
@@ -90,7 +90,7 @@ class Life:
         self.maxFoodsToEat = 25
         self.done = False
         # to play
-        self.agent = tf.keras.models.load_model(model_path + "episode-233_model_success.h5")
+        self.agent = tf.keras.models.load_model(model_path + "episode-990_model_failure.h5")
         # to train
 #        self.agent = DQNLamp()
         self.current_reward = 0
@@ -128,8 +128,8 @@ class Life:
                     length=parent.length+length_buff,
                     height=parent.height+height_buff,
                     parent=parent,
-                    canMutate_=parent.canMutate,
-                    isAI_=parent.isAI)    
+                    canMutate_=parent.canMutate
+                    ,isAI_=parent.isAI)    
         self.lamp_ID += 1
     
         if baby.length <= 0:
@@ -211,7 +211,7 @@ class Life:
             
         else:
            for i in range(self.numLamps):    
-               if i != 0:
+               if i %2 == 0:
                    lamp_i = lamp(ID=self.lamp_ID)
                    self.lamp_ID += 1
                    self.lamp_colony.append(lamp_i)
@@ -298,8 +298,7 @@ class Life:
             lamp.energy,
             lamp.velocity[0],
             lamp.velocity[1],
-            lamp.scentMagnitude,
-            lamp.at_wall
+            lamp.scentMagnitude
         ]
         self.current_state = np.array(current_state, dtype=np.float32)
 
@@ -322,8 +321,7 @@ class Life:
             lamp.energy,
             lamp.velocity[0],
             lamp.velocity[1],
-            lamp.scentMagnitude,
-            lamp.at_wall
+            lamp.scentMagnitude
         ]
         self.new_state = np.array(new_state, dtype=np.float32)
  #       new_state.reshape(1,self.agent.numStateParameters)
@@ -341,10 +339,7 @@ class Life:
         ################################
 
 
-        ####### hitting the wall ######
-        if lamp.at_wall != 0:
-            self.current_reward -= 3
-        
+
         ###### dying ######
         if lamp.energy <= 0:
             self.current_reward -= 200
@@ -506,11 +501,11 @@ class Life:
             
         self.stats_file.write("\n\n")
         
-        ##        if beatGame and training and (not playing):
-        ##            return beatGame, foods_eaten
-        ##        elif training and (not playing):
-        ##            return beatGame, foods_eaten
-        ##        else:
+        #       if beatGame and training and (not playing):
+        #           return beatGame, foods_eaten
+        #       elif training and (not playing):
+        #           return beatGame, foods_eaten
+        #       else:
         return False, 0
 
     def reset(self):
@@ -549,11 +544,11 @@ def main():
     # Y-velocity
     # scent magnitude
     #######
-    num_episodes = 300
+    num_episodes = 1000
     total_reward = []
     steps = []
     successes = []
-    theGameOfLife = Life(numLamps_=20, numFoods_=60, foodResupply_=20,boxWidth_=1000, boxHeight_=800)
+    theGameOfLife = Life(numLamps_=21, numFoods_=60, foodResupply_=20,boxWidth_=1000, boxHeight_=800)
     #### MAKE CHANGES IN gameLoop to handle 
     
     ## to play instead of train:
@@ -562,47 +557,47 @@ def main():
         theGameOfLife.reset()
 
     
-#    try:    
-#        for episode in range(num_episodes):
-#            print("======================================================")
-#            print("Processing episode: " + str(episode))
-#            print("======================================================")
-#            time_start = time.time()
-#            cur_state = np.array([0,0,0,0])
-#            beatGame,foods_eaten = theGameOfLife.gameLoop(training=True)
-#    
-#            #### update stats
-#            total_reward.append(theGameOfLife.episode_reward)
-#            steps.append(theGameOfLife.episode_steps)
-#            successes.append(beatGame)
-#            print("--------------------------------------------------------")
-#            print("Episode: " + str(int(episode)) + " completed in: " + str(theGameOfLife.episode_steps) + " steps.")
-#            print("--------------------------------------------------------")
+    try:    
+        for episode in range(num_episodes):
+            print("======================================================")
+            print("Processing episode: " + str(episode))
+            print("======================================================")
+            time_start = time.time()
+            cur_state = np.array([0,0,0,0])
+            beatGame,foods_eaten = theGameOfLife.gameLoop(training=True)
+    
+            #### update stats
+            total_reward.append(theGameOfLife.episode_reward)
+            steps.append(theGameOfLife.episode_steps)
+            successes.append(beatGame)
+            print("--------------------------------------------------------")
+            print("Episode: " + str(int(episode)) + " completed in: " + str(theGameOfLife.episode_steps) + " steps.")
+            print("--------------------------------------------------------")
+
+            if beatGame:
+                print("Successfully completed in episode: " + str(episode) + " with a total reward of: " + str(theGameOfLife.episode_reward))
+                theGameOfLife.agent.save_model(model_path + "episode-{}_model_success.h5".format(episode))
+            else:
+                print("Failed to complete episode: " + str(episode) + " with a total reward of: " + str(theGameOfLife.episode_reward))
+                print("We ate " + str(foods_eaten) + " foods")
+                if episode % 10 == 0:
+                    theGameOfLife.agent.save_model(model_path + "episode-{}_model_failure.h5".format(episode))
+                    
+            time_end = time.time()
+            tf.keras.backend.clear_session()
+            print("Processing episode: " + str(episode) + " took: " + str(int(time_end - time_start)) + " seconds. Avg running reward is: " + str(np.array(total_reward)[-100:].mean()))
+            
+            theGameOfLife.reset()
+    
+    except KeyboardInterrupt:
+            print('interrupted!')
+
+    results_df = pd.DataFrame(total_reward, columns = ['episode_reward'])
+    results_df['steps_taken'] = steps
+    results_df['Success'] = successes
+    results_df['average_running_reward'] = results_df['episode_reward'].rolling(window=100).mean()
 #
-#            if beatGame:
-#                print("Successfully completed in episode: " + str(episode) + " with a total reward of: " + str(theGameOfLife.episode_reward))
-#                theGameOfLife.agent.save_model(model_path + "episode-{}_model_success.h5".format(episode))
-#            else:
-#                print("Failed to complete episode: " + str(episode) + " with a total reward of: " + str(theGameOfLife.episode_reward))
-#                print("We ate " + str(foods_eaten) + " foods")
-#                if episode % 10 == 0:
-#                    theGameOfLife.agent.save_model(model_path + "episode-{}_model_failure.h5".format(episode))
-#                    
-#            time_end = time.time()
-#            tf.keras.backend.clear_session()
-#            print("Processing episode: " + str(episode) + " took: " + str(int(time_end - time_start)) + " seconds. Avg running reward is: " + str(np.array(total_reward)[-100:].mean()))
-#            
-#            theGameOfLife.reset()
-#    
-#    except KeyboardInterrupt:
-#            print('interrupted!')
-#
-#    results_df = pd.DataFrame(total_reward, columns = ['episode_reward'])
-#    results_df['steps_taken'] = steps
-#    results_df['Success'] = successes
-#    results_df['average_running_reward'] = results_df['episode_reward'].rolling(window=100).mean()
-#
-#    results_df.to_csv(model_path+"training_results.csv")
+    results_df.to_csv(model_path+"training_results.csv")
 #
     
 

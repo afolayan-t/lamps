@@ -25,7 +25,7 @@ class DQNLamp:
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.996
         self.learning_rate = 0.001
-        self.numStateParameters = 5
+        self.numStateParameters = 4
         self.actionSpace = [0,1,2,3,4]
         self.model = self.create_model() #### This does the actual predictions
         
