@@ -82,9 +82,8 @@ class lamp:
         
         self.maxEnergy = self.length*self.height
         self.energy = self.maxEnergy/2
-
         self.nScentPoints = 2 # general scent points
-        self.scentMagnitude = np.zeros([1, 2])#np.zeros([3,3]) # row is nostril, col is rgb
+        self.scentMagnitude = np.zeros([2])#np.zeros([3,3]) # row is nostril, col is rgb
         self.stinkRadius = 5
         self.setVertices()
         self.setScentPoints()
@@ -134,24 +133,24 @@ class lamp:
         self.position = self.position + self.velocity*dt
 
         ### make lamps spawn at other side of the box
-        if self.position[0] >= boxWidth: #### right
-            self.position[0] = 0#boxWidth
+#        if self.position[0] >= boxWidth: #### right
+#            self.position[0] = 0#boxWidth
 #            self.velocity[0] = 0
 #            self.at_wall = 4
-        elif self.position[0] < 0:
-            self.position[0] = boxWidth#0
+#        elif self.position[0] < 0:
+#            self.position[0] = boxWidth#0
 #            self.velocity[0] = 0
 #            self.at_wall = 3
-        elif self.position[1] >= boxHeight:
-            self.position[1] =  0#boxHeight
+#        elif self.position[1] >= boxHeight:
+#            self.position[1] =  0#boxHeight
 #            self.velocity[1] = 0
 #            self.at_wall = 2
-        elif self.position[1] < 0:
-            self.position[1] = boxHeight#0
+#        elif self.position[1] < 0:
+#            self.position[1] = boxHeight#0
 #            self.velocity[1] = 0
 #            self.at_wall = 1
-        else:
-            self.at_wall = 0
+#        else:
+#            self.at_wall = 0
             
         self.steps_taken += 1
         
@@ -222,16 +221,14 @@ class lamp:
         for i in range(0,self.nScentPoints):
             x_eval = int(self.scentPoints[i,0])
             y_eval = int(self.scentPoints[i,1])
-            
-            if self.scentPoints[0,0] >= boxWidth: 
+            if self.scentPoints[i,0] >= boxWidth: 
                 x_eval = boxWidth-1
-            if self.scentPoints[0,0] <= 0:
+            if self.scentPoints[i,0] <= 0:
                 x_eval = 0
-            if self.scentPoints[0,1] >= boxHeight:
+            if self.scentPoints[i,1] >= boxHeight:
                 y_eval = boxHeight-1
-            if self.scentPoints[0,1] <= 0:
+            if self.scentPoints[i,1] <= 0:
                 y_eval = 0
-                
             self.scentMagnitude[i] = globalStinkField[y_eval, x_eval]
 
             
@@ -348,7 +345,7 @@ class Food:
     def setStinkField(self):
          # define stink field as a XSxYSx3 array. I.E. an RGB at every coordinate
         # a three dimensional stink field lol
-        stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 ) ))# ** (1/2)))
+        stinkPlane = np.exp(-(1/self.stinkRadius)*(( (XS-self.position[0])**2 + (YS-self.position[1])**2 )  ** (1/2)))
         self.stinkField = self.color[0]*stinkPlane
         # set boundaries of stink field equal to zero
         self.stinkField[0,:] = 0

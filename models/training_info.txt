@@ -27,4 +27,34 @@ die = -200
 eat = +100
 repro =	+150
 move =          -dE/50
-walls: pop out on other side when you cross extremes
+
+features:
+-walls: pop out on other side when you cross extremes
+-foods: 40, 20 regeneration
+
+
+rev6 (04/29): 1000 eps
+die = -200
+eat = +100
+repro =	+150
+move =          -dE/50
+
+features:
+-walls: none, can go on forever
+-2 nostrils
+-out of bounds stink field = 0
+-50 foods, 0 regeneration
+-episodes end after 20 foods
+-input dim for neural net is now 5, added scent magnitude for each nostril
+
+
+
+
+rev7 (04/29): 1000 eps
+die = -200
+eat = +100
+repro = +150
+move =          -dE/50
+
+features:
+-same as rev6 but changed neural net to be 3 hidden layers, 150, 75, 100

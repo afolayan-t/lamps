@@ -19,7 +19,35 @@ blue = (0, 0, 128)
 red = (255, 0, 0)
 black = (0,0,0)
 
-model_path = "/Users/ben/Documents/GitRepos/lamps/models/rev5/"
+model_path = "/Users/ben/Documents/GitRepos/lamps/models/rev7/"
+
+#if len(sys.argv) == 4: #all arguments present
+#     numLamps = int(sys.argv[1])
+#     numFoods = int(sys.argv[2])
+#     foodResupply = int(sys.argv[3])
+
+# if len(sys.argv) == 3: #2 arguments provided
+#     numLamps = int(sys.argv[1])
+#     numFoods = int(sys.argv[2])
+#     foodResupply = int(input("number of foods per respawn? "))
+
+# if len(sys.argv) == 2: #1 argument present
+#     numLamps = int(sys.argv[1])
+#     numFoods = int(input("number of foods? "))
+#     foodResupply = int(input("number of foods per respawn? "))
+
+
+# if len(sys.argv) == 1: #no arguments present
+#     numLamps = int(input("number of lamps? "))
+#     numFoods = int(input("number of foods? "))
+#     foodResupply = int(input("number of foods per respawn? "))
+
+
+# use_pygame = input("Use pygame?? (y/n) ")
+# while use_pygame != "y" and use_pygame != "n":
+#     print("must reply 'y' or 'n'")
+#     use_pygame = input("Use pygame?? (y/n):\n")
+
 
 class Life:
 
@@ -71,6 +99,26 @@ class Life:
 
             pygame.init()
     
+
+        ##############################################################################
+        # PARAMETERS FOR AI STUFF
+        ##############################################################################
+        self.actionSpace = [0,1,2,3,4]
+        #self.maxSteps = 15000
+        self.maxFoodsToEat = 20
+        self.done = False
+        # to play
+#        self.agent = tf.keras.models.load_model(model_path + "episode-886_model_failure.h5")
+        # to train
+        self.agent = DQNLamp()
+        self.current_reward = 0
+        self.episode_reward = 0
+        self.episode_steps = 0
+        self.training = True
+        ##############################################################################
+
+
+
         self.lamp_colony = []
         self.food_colony  = []
         self.init_lamps()
@@ -81,23 +129,6 @@ class Life:
         #### FILE TO WRITE ALL DATA TO
         self.stats_file = self.init_simulation_data()
 
-
-        ##############################################################################
-        # PARAMETERS FOR AI STUFF
-        ##############################################################################
-        self.actionSpace = [0,1,2,3,4]
-        #self.maxSteps = 15000
-        self.maxFoodsToEat = 25
-        self.done = False
-        # to play
-        self.agent = tf.keras.models.load_model(model_path + "episode-990_model_failure.h5")
-        # to train
-#        self.agent = DQNLamp()
-        self.current_reward = 0
-        self.episode_reward = 0
-        self.episode_steps = 0
-        ##############################################################################
-        
 
     def dumpFoods(self):
         for i in range(self.foodResupply):
@@ -129,7 +160,7 @@ class Life:
                     height=parent.height+height_buff,
                     parent=parent,
                     canMutate_=parent.canMutate
-                    ,isAI_=parent.isAI)    
+                    )#,isAI_=parent.isAI)    
         self.lamp_ID += 1
     
         if baby.length <= 0:
@@ -199,16 +230,14 @@ class Life:
         pygame.display.update()
 #        time.sleep(3)
 
-    def init_lamps(self):
+    def init_lamps(self):#training=False):
         ### For testing AI
-        if self.numLamps == 2:
+        if self.training:
             lamp_i = lamp(ID=self.lamp_ID, canMutate_=False, isAI_=True,color=blue)
             self.lamp_ID += 1
             self.lamp_colony.append(lamp_i)
-            lamp_j = lamp(ID=self.lamp_ID, canMutate_=True, isAI_=False,color=red)
-            self.lamp_ID += 1
-            self.lamp_colony.append(lamp_j)
-            
+            if self.RUN_PYGAME:
+                self.renderLamp(lamp_i)
         else:
            for i in range(self.numLamps):    
                if i %2 == 0:
@@ -298,7 +327,8 @@ class Life:
             lamp.energy,
             lamp.velocity[0],
             lamp.velocity[1],
-            lamp.scentMagnitude
+            lamp.scentMagnitude[0],
+            lamp.scentMagnitude[1]
         ]
         self.current_state = np.array(current_state, dtype=np.float32)
 
@@ -321,7 +351,8 @@ class Life:
             lamp.energy,
             lamp.velocity[0],
             lamp.velocity[1],
-            lamp.scentMagnitude
+            lamp.scentMagnitude[0],
+            lamp.scentMagnitude[1]
         ]
         self.new_state = np.array(new_state, dtype=np.float32)
  #       new_state.reshape(1,self.agent.numStateParameters)
@@ -391,8 +422,9 @@ class Life:
         running = True
         try:
             while running:
-#                if self.done:
-#                    break
+                if self.training:
+                    if self.done:
+                        break
 #                time.sleep(.3)
                 # reset screen color to white
                 if self.RUN_PYGAME:
@@ -500,13 +532,15 @@ class Life:
             pygame.display.quit() # quit the GUI
             
         self.stats_file.write("\n\n")
-        
-        #       if beatGame and training and (not playing):
-        #           return beatGame, foods_eaten
-        #       elif training and (not playing):
-        #           return beatGame, foods_eaten
-        #       else:
-        return False, 0
+
+
+        if self.training:
+            if beatGame and training and (not playing):
+                return beatGame, foods_eaten
+            elif training and (not playing):
+                return beatGame, foods_eaten
+        else:
+            return False, 0
 
     def reset(self):
         self.lamp_ID = 0
@@ -544,17 +578,17 @@ def main():
     # Y-velocity
     # scent magnitude
     #######
-    num_episodes = 1000
+    num_episodes = 2000
     total_reward = []
     steps = []
     successes = []
-    theGameOfLife = Life(numLamps_=21, numFoods_=60, foodResupply_=20,boxWidth_=1000, boxHeight_=800)
+    theGameOfLife = Life(numLamps_=1, numFoods_=50, foodResupply_=0,boxWidth_=1000, boxHeight_=800)
     #### MAKE CHANGES IN gameLoop to handle 
     
     ## to play instead of train:
-    for i in range(10):
-        beatGame,foods_eaten = theGameOfLife.gameLoop(training=True, playing=True)
-        theGameOfLife.reset()
+#    for i in range(10):
+#        beatGame,foods_eaten = theGameOfLife.gameLoop(training=True, playing=True)
+#        theGameOfLife.reset()
 
     
     try:    
