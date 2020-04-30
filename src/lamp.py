@@ -83,6 +83,7 @@ class lamp:
         self.maxEnergy = self.length*self.height
         self.energy = self.maxEnergy/2
 
+        self.nScentPoints = 2 # general scent points
         self.scentMagnitude = np.zeros([1, 2])#np.zeros([3,3]) # row is nostril, col is rgb
         self.stinkRadius = 5
         self.setVertices()
@@ -217,20 +218,21 @@ class lamp:
         return rot_mat
     
     def smell(self, globalStinkField):
-
-        x_eval = int(self.scentPoints[0,0])
-        y_eval = int(self.scentPoints[0,1])
         
-        if self.scentPoints[0,0] >= boxWidth: 
-            x_eval = boxWidth-1
-        if self.scentPoints[0,0] <= 0:
-            x_eval = 0
-        if self.scentPoints[0,1] >= boxHeight:
-            y_eval = boxHeight-1
-        if self.scentPoints[0,1] <= 0:
-            y_eval = 0
+        for i in range(0,self.nScentPoints):
+            x_eval = int(self.scentPoints[i,0])
+            y_eval = int(self.scentPoints[i,1])
             
-        self.scentMagnitude = globalStinkField[y_eval, x_eval]
+            if self.scentPoints[0,0] >= boxWidth: 
+                x_eval = boxWidth-1
+            if self.scentPoints[0,0] <= 0:
+                x_eval = 0
+            if self.scentPoints[0,1] >= boxHeight:
+                y_eval = boxHeight-1
+            if self.scentPoints[0,1] <= 0:
+                y_eval = 0
+                
+            self.scentMagnitude[i] = globalStinkField[y_eval, x_eval]
 
             
     def rotate(self):
@@ -274,9 +276,8 @@ class lamp:
         ### I should be which ever is easiest to give to Tolu for reinforcement learning
 
         ### set general scent points
-        nScentPoints = 2 # general scent points
         nostralAngle = np.pi/4
-        theta = np.linspace(-nostralAngle, nostralAngle, nScentPoints)
+        theta = np.linspace(-nostralAngle, nostralAngle, self.nScentPoints)
         r = (self.height)/2
         scent_x = r*np.cos(theta)
         scent_y = r*np.sin(theta)
