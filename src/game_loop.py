@@ -182,16 +182,25 @@ class Life:
         
         #print("Lamp verticies:", lamp.vertices)
         pygame.draw.polygon(self.screen, lamp.color, lamp.vertices)
-        
+
         # This draws the direction of the velocity vectors
-#        pygame.draw.line(self.screen, black, lamp.position, lamp.position + lamp.velocity*20) 
+        pygame.draw.line(self.screen, black, lamp.position, lamp.position + lamp.velocity*20) 
+
+        ### Draw lamp FOV for debugging
+        pygame.draw.line(self.screen, lamp.color, lamp.position, lamp.position+lamp.sight_lefteye)
+        pygame.draw.line(self.screen, lamp.color, lamp.position, lamp.position+lamp.sight_righteye)
+
+        # highlight the foods we see
+        pygame.draw.line(self.screen, red, lamp.position, lamp.position+lamp.nearest_food_displacements[0])
+
+
         
         # draw the scent points for each lamp
 
- #       for i in range(0,3):
-  #          x = int(lamp.scentPoints[i,0])
-   #         y = int(lamp.scentPoints[i,1])
-    #        pygame.draw.circle(self.screen, blue, (x,y), int(np.floor(lamp.height/4)))
+        for i in range(0,2):
+            x = int(lamp.scentPoints[i,0])
+            y = int(lamp.scentPoints[i,1])
+            pygame.draw.circle(self.screen, blue, (x,y), int(np.floor(lamp.height/4)))
             #        pygame.draw.rect(screen, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
 
     def renderFood(self, food):
@@ -228,7 +237,7 @@ class Life:
 #        textsurface = myfont.render('LAMPS EXTINCT, GG.', False, (0, 0, 0))
 #        display_.blit(textsurface,(self.boxWidth/4,self.boxHeight/2))
         pygame.display.update()
-#        time.sleep(3)
+        time.sleep(3)
 
     def init_lamps(self):#training=False):
         ### For testing AI
@@ -323,12 +332,17 @@ class Life:
                 -done:   boolean, is game over?(i.e has lamp taken max steps or died?)
         """
 
+        # print('lamp coordinates:', lamp.position)
+        # print('lamp food displacement: ', lamp.nearest_food_displacements)
+        # print('shape:', lamp.nearest_food_displacements.shape)
         current_state = [
             lamp.energy,
             lamp.velocity[0],
             lamp.velocity[1],
             lamp.scentMagnitude[0],
-            lamp.scentMagnitude[1]
+            lamp.scentMagnitude[1],
+            lamp.nearest_food_displacements[0,0],
+            lamp.nearest_food_displacements[0,1]
         ]
         self.current_state = np.array(current_state, dtype=np.float32)
 
@@ -345,6 +359,7 @@ class Life:
             
         dE = lamp.move(action=self.current_action)/50
         lamp.smell(self.globalStinkField)
+        lamp.see_food(self.food_colony)
 
         ### get updated state
         new_state = [
@@ -352,7 +367,9 @@ class Life:
             lamp.velocity[0],
             lamp.velocity[1],
             lamp.scentMagnitude[0],
-            lamp.scentMagnitude[1]
+            lamp.scentMagnitude[1],
+            lamp.nearest_food_displacements[0,0],
+            lamp.nearest_food_displacements[0,1]
         ]
         self.new_state = np.array(new_state, dtype=np.float32)
  #       new_state.reshape(1,self.agent.numStateParameters)
@@ -425,7 +442,7 @@ class Life:
                 if self.training:
                     if self.done:
                         break
-#                time.sleep(.3)
+                # time.sleep(.3)
                 # reset screen color to white
                 if self.RUN_PYGAME:
                     self.screen.fill([255,255,255])
@@ -586,9 +603,9 @@ def main():
     #### MAKE CHANGES IN gameLoop to handle 
     
     ## to play instead of train:
-#    for i in range(10):
-#        beatGame,foods_eaten = theGameOfLife.gameLoop(training=True, playing=True)
-#        theGameOfLife.reset()
+    # for i in range(10):
+    #     beatGame,foods_eaten = theGameOfLife.gameLoop(training=True, playing=True)
+    #     theGameOfLife.reset()
 
     
     try:    

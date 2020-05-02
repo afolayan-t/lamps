@@ -82,12 +82,26 @@ class lamp:
         
         self.maxEnergy = self.length*self.height
         self.energy = self.maxEnergy/2
+
         self.nScentPoints = 2 # general scent points
         self.scentMagnitude = np.zeros([2])#np.zeros([3,3]) # row is nostril, col is rgb
         self.stinkRadius = 5
+
+
         self.setVertices()
         self.setScentPoints()
+
+        self.sight_range = 160 # can evolve
+        self.eye_position = np.zeros([2,2])
+        self.eye_position[0,:] = np.flip(self._lampFrameVertices[1]) # oriente along y-axis
+        self.eye_position[1,:] = np.flip(self._lampFrameVertices[2])
         
+        self.num_nearest_seen_foods = 1
+        self.nearest_food_displacements = np.zeros((self.num_nearest_seen_foods, 2))
+        self.sight_righteye = np.array([0,0])
+        self.sight_lefteye = np.array([0,0])
+        self.sight_vector = np.array([0,0])
+
         
     def move(self, action=0):
         """
@@ -215,6 +229,97 @@ class lamp:
         c,s = np.cos(radians),np.sin(radians)
         rot_mat = np.matrix([[c,-s],[s,c]])
         return rot_mat
+
+    def limit_food_search(self, food_colony):
+        
+        food_coordinates = np.array([food.position for food in food_colony])
+        # np.array(food_colony.position)
+        # define limits
+
+        # rotate limits of scent
+        eye_theta = np.arctan(self.eye_position[1,0]/self.eye_position[1,1])
+        # print('eye_theta left eye', (180/np.pi)*eye_theta)
+        rotation_matrix = np.array([[np.cos(eye_theta), -np.sin(eye_theta)], [np.sin(eye_theta), np.cos(eye_theta)]])
+        self.sight_vector = np.array([self.sight_range, 0])
+        sight_lefteye = np.matmul(rotation_matrix, self.sight_vector)
+        eye_theta = -eye_theta
+        rotation_matrix = np.array([[np.cos(eye_theta), -np.sin(eye_theta)], [np.sin(eye_theta), np.cos(eye_theta)]])
+        sight_righteye = np.matmul(rotation_matrix, self.sight_vector)
+        # put eye vectors in gameloop frame
+        third_component = -self.velocity[1] # cross prod with unit vector
+        lamp_frame_angle =  np.arccos(np.dot([1, 0], self.velocity/np.linalg.norm(self.velocity)))
+        # this comes from the cross product to see if w rotate clwwise or cnt clckwise
+        if third_component > 0:
+            lamp_frame_angle *= -1
+        rotation_matrix = np.array([[np.cos(lamp_frame_angle), -np.sin(lamp_frame_angle)],[np.sin(lamp_frame_angle), np.cos(lamp_frame_angle)]])
+        sight_lefteye = np.matmul(rotation_matrix, sight_lefteye)
+        sight_righteye = np.matmul(rotation_matrix, sight_righteye)
+        # put in game_loop reference frame
+        self.sight_lefteye = sight_lefteye
+        self.sight_righteye = sight_righteye
+        sight_lefteye = sight_lefteye + self.position
+        sight_righteye = sight_righteye + self.position
+        # definte limits for range in which to serach for foods
+        limit_left = np.min([self.position[0], sight_lefteye[0], sight_righteye[0]])
+        limit_right = np.max([self.position[0], sight_lefteye[0], sight_righteye[0]])
+        limit_top = np.max([self.position[1], sight_lefteye[1], sight_righteye[1]])
+        limit_bottom = np.min([self.position[1], sight_lefteye[1], sight_righteye[1]])
+        leftrighttopbottom = np.array([limit_left, limit_right, limit_top, limit_bottom])
+        # select foods in list 
+        horizontal_indices = (limit_left<food_coordinates[:,0]) & (food_coordinates[:,0]<limit_right)
+        vertical_indices = (limit_bottom<food_coordinates[:,1]) & (food_coordinates[:,1]<limit_top)
+        reduced_food_indicies= vertical_indices & horizontal_indices
+        reduced_food_coordiantes = food_coordinates[reduced_food_indicies]
+        return reduced_food_coordiantes
+
+    def see_food(self, food_colony): 
+
+        reduced_food_list= self.limit_food_search(food_colony)
+        # print('num foods in bounding box: ', reduced_food_list.shape[0])
+        self.nearest_food_displacements = np.zeros((self.num_nearest_seen_foods, 2)) # reset to zeros
+        # check if any food is entered
+        n_to_check = reduced_food_list.shape[0]
+        if n_to_check > 0:
+            # print('eye position:', self.eye_position)
+            eye_theta = np.arctan(self.eye_position[1,0]/self.eye_position[1,1])
+            # print('eye theta:', eye_theta)
+            reduced_food_lamped_centered = reduced_food_list - self.position # foods in2 lamp frame
+            
+            distances = np.sqrt(np.sum(reduced_food_lamped_centered**2,axis=1))
+            dist_indx = distances.argsort()
+            # print('food position in in game frame: ', reduced_food_list[dist_indx[0]])
+            mag_lamp_center = np.linalg.norm(reduced_food_lamped_centered, axis=1)
+            mag_lamp_center_matrix = np.ones([reduced_food_lamped_centered.shape[0],2])
+            mag_lamp_center_matrix[:,0] = mag_lamp_center
+            mag_lamp_center_matrix[:,1] = mag_lamp_center
+            norm_food_lamped_centered = reduced_food_lamped_centered/mag_lamp_center_matrix
+            # print('norm_food_lamped_centered: ', norm_food_lamped_centered)
+            food_angular_displacements =np.arccos(np.dot(norm_food_lamped_centered, self.velocity/np.linalg.norm(self.velocity)))
+
+            # print('food_angular_displacements', (180/np.pi)*food_angular_displacements)
+            # check if less than radial distance away and if within sight angle
+            saw_foods_indx = (food_angular_displacements < eye_theta) & (distances < self.sight_range)
+            # print('num close enough:' , sum((distances < self.sight_range)))
+            # print('num angle enough: ', sum((food_angular_displacements < 2*eye_theta)))
+            # check if any are seen
+            if any(saw_foods_indx)==True:
+                # update nNearest to be the at most nNearest 
+                if sum(saw_foods_indx) < self.num_nearest_seen_foods:
+                    num_saw_foods = sum(saw_foods_indx)
+                else:
+                    num_saw_foods = self.num_nearest_seen_foods
+                # reduce count
+                saw_foods = reduced_food_lamped_centered[saw_foods_indx]
+                # rank list by distance 
+                saw_distances = distances[saw_foods_indx]
+                sorted_nearest_indxs = saw_distances.argsort()
+                # sort by nearest
+                sorted_nearest_foods = saw_foods[sorted_nearest_indxs[:num_saw_foods]]
+                for i in range(num_saw_foods):
+                    self.nearest_food_displacements[i,:] = sorted_nearest_foods[i,:]
+                    
+        
+
     
     def smell(self, globalStinkField):
         
@@ -275,7 +380,7 @@ class lamp:
         ### set general scent points
         nostralAngle = np.pi/4
         theta = np.linspace(-nostralAngle, nostralAngle, self.nScentPoints)
-        r = (self.height)/2
+        r = (self.height)/3
         scent_x = r*np.cos(theta)
         scent_y = r*np.sin(theta)
         tempCoordaintes = np.transpose(np.array([scent_x, scent_y])) # make each row be a coordinate
