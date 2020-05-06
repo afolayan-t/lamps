@@ -50,7 +50,7 @@ features:
 
 
 
-rev7 (04/29): 1000 eps
+rev7 (04/29): 1400 eps
 die = -200
 eat = +100
 repro = +150
@@ -58,3 +58,28 @@ move =          -dE/50
 
 features:
 -same as rev6 but changed neural net to be 3 hidden layers, 150, 75, 100
+
+
+
+
+rev8 (05/02): 1674 eps
+die = -200
+eat = +100
+repro = +150
+move =    -dE/50
++=  dScentMag
+
+features:
+- added sight; lamp now identifies nearest food.  Also put scent points on body.
+
+
+
+rev9 (05/03): 3000 eps
+die = -200
+eat = +100
+repro = +150
+move =    -dE/50
++=  dScentMag
+
+features:
+got rid of smelling from state, got rid of velocity and added position

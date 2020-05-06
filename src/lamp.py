@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import math
+
 boxWidth = 1000
 boxHeight = 800
 green = (0, 255, 0)
@@ -29,7 +31,7 @@ class lamp:
     #   nomenclature:
     #   scent is what you detect where stink is what you are
 
-    def __init__(self, ID=0, parent=None, color=red, x=None, y=None, max_velo=3,
+    def __init__(self, ID=0, parent=None, color=red, x=None, y=None, max_velo=2,
                  length=15, height=12, canMutate_=False, isAI_=False):
 
         ### boolean value corresponding to whether or not the lamp is an AI or not
@@ -39,7 +41,7 @@ class lamp:
         
         self.max_velocity = max_velo
 
-
+    
         self.ID = ID
         self.foods_eaten = 0
         self.steps_taken = 0
@@ -65,7 +67,7 @@ class lamp:
         
         xDot = np.random.randint(-2,3)#()-.5#(-1, 2)
         yDot = np.random.randint(-2,3)#()-.5#(-1, 2)
-        vel = [1,0]#[xDot,yDot]
+        vel = [self.max_velocity,0]#[xDot,yDot]
         self.velocity = np.array(vel)
 
         if self.canMutate:
@@ -81,7 +83,7 @@ class lamp:
         self.mass =  .4*self.length*( (.2*self.length + .5*self.height)/2 )
         
         self.maxEnergy = self.length*self.height
-        self.energy = self.maxEnergy/2
+        self.energy = self.maxEnergy*.8
 
         self.nScentPoints = 2 # general scent points
         self.scentMagnitude = np.zeros([2])#np.zeros([3,3]) # row is nostril, col is rgb
@@ -101,7 +103,7 @@ class lamp:
         self.sight_righteye = np.array([0,0])
         self.sight_lefteye = np.array([0,0])
         self.sight_vector = np.array([0,0])
-
+        self.nearest_food_coordinates = np.array([boxWidth/2,boxHeight/2])
         
     def move(self, action=0):
         """
@@ -116,17 +118,26 @@ class lamp:
         ### get current velocity to pass to rotate()
         oldVelocity = self.velocity
 
+#        if self.isAI:
+
+#            if action == 0: # do nothing
+#                force = [0,0]
+#            elif action == 1: # speed up
+#                force = self.speedUp(1)
+#            elif action == 2: # slow down
+#                force = self.speedDown(1)
+#            elif action == 3: # turn left
+#                force = self.turnLeft(1)
+#            elif action == 4: # turn right
+#                force = self.turnRight(1)
+        
         if self.isAI:
-#            print(state)
+
             if action == 0: # do nothing
                 force = [0,0]
-            elif action == 1: # speed up
-                force = self.speedUp(1)
-            elif action == 2: # slow down
-                force = self.speedDown(1)
-            elif action == 3: # turn left
+            elif action == 1: # turn left
                 force = self.turnLeft(1)
-            elif action == 4: # turn right
+            elif action == 2: # turn right
                 force = self.turnRight(1)
 
         else:
@@ -136,35 +147,46 @@ class lamp:
             
         self.force = np.array(force)
         
-        if ((self.velocity[0] + self.force[0]*dt)**2 + (self.velocity[1] + self.force[1]*dt)**2)**(1/2) < self.max_velocity:
-            self.velocity = self.velocity + self.force*dt
+        #        if ((self.velocity[0] + self.force[0]*dt)**2 + (self.velocity[1] + self.force[1]*dt)**2)**(1/2) < self.max_velocity:
+        
+        self.velocity = self.velocity + self.force*dt
+        self.velocity = self.max_velocity*self.velocity/np.linalg.norm(self.velocity)
 
         f = 800 ### constant to dock energy by
         dE = -(self.mass*(np.linalg.norm(self.velocity))**2)/f - dt/50 ## last term so that lamp dies if it stops
         self.energy +=  dE
 
         ### Make verticies such that they are around the origin of the lamp
-        self.position = self.position + self.velocity*dt
-
+        updown = np.random.random() - .5
+        leftright = np.random.random() - .5
+        if leftright < 0:
+            self.position[0] = int(self.position[0] + self.velocity[0]*dt)
+        else:
+            self.position[0] = math.ceil(self.position[0] + self.velocity[0]*dt)
+        if updown < 0:
+            self.position[1] = int(self.position[1] + self.velocity[1]*dt)
+        else:
+            self.position[1] = math.ceil(self.position[1] + self.velocity[1]*dt)
+        
         ### make lamps spawn at other side of the box
-#        if self.position[0] >= boxWidth: #### right
-#            self.position[0] = 0#boxWidth
-#            self.velocity[0] = 0
-#            self.at_wall = 4
-#        elif self.position[0] < 0:
-#            self.position[0] = boxWidth#0
-#            self.velocity[0] = 0
-#            self.at_wall = 3
-#        elif self.position[1] >= boxHeight:
-#            self.position[1] =  0#boxHeight
-#            self.velocity[1] = 0
-#            self.at_wall = 2
-#        elif self.position[1] < 0:
-#            self.position[1] = boxHeight#0
-#            self.velocity[1] = 0
-#            self.at_wall = 1
-#        else:
-#            self.at_wall = 0
+        if self.position[0] >= boxWidth: #### right
+            self.position[0] = boxWidth
+            self.velocity[0] *= -1
+            self.at_wall = 4
+        elif self.position[0] <= 0:
+            self.position[0] = 0
+            self.velocity[0] *= -1
+            self.at_wall = 3
+        elif self.position[1] >= boxHeight:
+            self.position[1] =  boxHeight
+            self.velocity[1] *= -1
+            self.at_wall = 2
+        elif self.position[1] <= 0:
+            self.position[1] = 0
+            self.velocity[1]  *= -1
+            self.at_wall = 1
+        else:
+            self.at_wall = 0
             
         self.steps_taken += 1
         
@@ -279,6 +301,11 @@ class lamp:
         self.nearest_food_displacements = np.zeros((self.num_nearest_seen_foods, 2)) # reset to zeros
         # check if any food is entered
         n_to_check = reduced_food_list.shape[0]
+        if len(reduced_food_list) > 0:
+            self.nearest_food_coordinates = reduced_food_list[0]
+        else:
+            self.nearest_food_coordinates = np.array([boxWidth/2,boxHeight/2])#np.array([0,0])
+            
         if n_to_check > 0:
             # print('eye position:', self.eye_position)
             eye_theta = np.arctan(self.eye_position[1,0]/self.eye_position[1,1])
@@ -317,8 +344,7 @@ class lamp:
                 sorted_nearest_foods = saw_foods[sorted_nearest_indxs[:num_saw_foods]]
                 for i in range(num_saw_foods):
                     self.nearest_food_displacements[i,:] = sorted_nearest_foods[i,:]
-                    
-        
+
 
     
     def smell(self, globalStinkField):

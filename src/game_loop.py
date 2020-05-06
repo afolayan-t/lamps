@@ -19,7 +19,7 @@ blue = (0, 0, 128)
 red = (255, 0, 0)
 black = (0,0,0)
 
-model_path = "/Users/ben/Documents/GitRepos/lamps/models/rev7/"
+model_path = "/Users/ben/Documents/GitRepos/lamps/models/rev15/"
 
 #if len(sys.argv) == 4: #all arguments present
 #     numLamps = int(sys.argv[1])
@@ -51,7 +51,8 @@ model_path = "/Users/ben/Documents/GitRepos/lamps/models/rev7/"
 
 class Life:
 
-    def __init__(self, boxWidth_=1000, boxHeight_=800, numLamps_=40, numFoods_=65, foodResupply_=25, usePygame=False):
+    def __init__(self, boxWidth_=1000, boxHeight_=800, numLamps_=40, numFoods_=65, foodResupply_=25, usePygame=False,
+                 lamp_types=None): ## 2nd row is for TESTING
         # Establish size of environment window#
         self.boxWidth = boxWidth_
         self.boxHeight = boxHeight_
@@ -108,21 +109,26 @@ class Life:
         self.maxFoodsToEat = 20
         self.done = False
         # to play
-#        self.agent = tf.keras.models.load_model(model_path + "episode-886_model_failure.h5")
+#        self.agent = tf.keras.models.load_model(model_path + "episode-30_model_failure.h5")
         # to train
         self.agent = DQNLamp()
         self.current_reward = 0
         self.episode_reward = 0
         self.episode_steps = 0
         self.training = True
+#        self.testing = True
         ##############################################################################
 
 
 
         self.lamp_colony = []
         self.food_colony  = []
-        self.init_lamps()
         self.init_foods()
+        if self.testing:
+            self.init_test()
+        else:
+            self.init_lamps()
+
 
         self.init_stinkField()
         
@@ -184,7 +190,7 @@ class Life:
         pygame.draw.polygon(self.screen, lamp.color, lamp.vertices)
 
         # This draws the direction of the velocity vectors
-        pygame.draw.line(self.screen, black, lamp.position, lamp.position + lamp.velocity*20) 
+#        pygame.draw.line(self.screen, black, lamp.position, lamp.position + lamp.velocity*20) 
 
         ### Draw lamp FOV for debugging
         pygame.draw.line(self.screen, lamp.color, lamp.position, lamp.position+lamp.sight_lefteye)
@@ -197,10 +203,10 @@ class Life:
         
         # draw the scent points for each lamp
 
-        for i in range(0,2):
-            x = int(lamp.scentPoints[i,0])
-            y = int(lamp.scentPoints[i,1])
-            pygame.draw.circle(self.screen, blue, (x,y), int(np.floor(lamp.height/4)))
+#        for i in range(0,2):
+#            x = int(lamp.scentPoints[i,0])
+#            y = int(lamp.scentPoints[i,1])
+#            pygame.draw.circle(self.screen, blue, (x,y), int(np.floor(lamp.height/4)))
             #        pygame.draw.rect(screen, lamp.color, (lamp.position[0], lamp.position[1], l, h), 0)
 
     def renderFood(self, food):
@@ -335,19 +341,24 @@ class Life:
         # print('lamp coordinates:', lamp.position)
         # print('lamp food displacement: ', lamp.nearest_food_displacements)
         # print('shape:', lamp.nearest_food_displacements.shape)
+        initial_scent_magnitude = np.mean(lamp.scentMagnitude)
         current_state = [
             lamp.energy,
+            lamp.position[0],
+            lamp.position[1], # changed from velocity
             lamp.velocity[0],
             lamp.velocity[1],
             lamp.scentMagnitude[0],
             lamp.scentMagnitude[1],
-            lamp.nearest_food_displacements[0,0],
-            lamp.nearest_food_displacements[0,1]
+            lamp.nearest_food_coordinates[0],
+            lamp.nearest_food_coordinates[1]
+#            lamp.nearest_food_displacements[0,0],
+#            lamp.nearest_food_displacements[0,1]
         ]
         self.current_state = np.array(current_state, dtype=np.float32)
 
 #        current_state.reshape(1,self.agent.numStateParameters)
-        
+
         ##### CALL act() function of
         if not playing:
             self.current_action = self.agent.act(self.current_state)
@@ -364,38 +375,53 @@ class Life:
         ### get updated state
         new_state = [
             lamp.energy,
+            lamp.position[0],
+            lamp.position[1],
             lamp.velocity[0],
             lamp.velocity[1],
             lamp.scentMagnitude[0],
             lamp.scentMagnitude[1],
-            lamp.nearest_food_displacements[0,0],
-            lamp.nearest_food_displacements[0,1]
+            lamp.nearest_food_coordinates[0],
+            lamp.nearest_food_coordinates[1]
+#            lamp.nearest_food_displacements[0,0],
+#            lamp.nearest_food_displacements[0,1]
         ]
         self.new_state = np.array(new_state, dtype=np.float32)
  #       new_state.reshape(1,self.agent.numStateParameters)
-        
+
+        final_scent_magnitude = np.mean(lamp.scentMagnitude)
+ 
+ 
         ######## Update reward for:
         # losing energy (add dE/50)
         # dying (subtract 200)
         # eating (add 100)
         # reproducing (add 150)
-        # at the wall (subtract 5)
+        # outside of the walls (subtract 3)
         self.current_reward =  0
 
         ####### change in energy #######
-        self.current_reward += dE
+ #       self.current_reward += dE
         ################################
 
 
+        ######### out of walls ########
+#        if lamp.position[0] > self.boxWidth or lamp.position[0] < 0 or lamp.position[1] > self.boxHeight or lamp.position[1] < 0:
+#            self.current_reward -= 1.5
+
+
+        ###### closer to food #######
+ #       if final_scent_magnitude > initial_scent_magnitude:
+ #           self.current_reward += .1
+        ############################
 
         ###### dying ######
         if lamp.energy <= 0:
-            self.current_reward -= 200
+#            self.current_reward -= 200
             self.done = True
         ###################
         ########### beating the round ###########
         if lamp.foods_eaten >= self.maxFoodsToEat:
-            #reward += 100 ### we won :D
             print("won")
             self.done = True
         #########################################
@@ -468,7 +494,7 @@ class Life:
 
                             if self.lamp_colony[i].isAI and training:
                                 print("ate, ", self.lamp_colony[i].foods_eaten)
-                                self.current_reward += 100
+                                self.current_reward += 50
                             
                             self.lamp_colony[i].foods_eaten += 1
                             self.lamp_colony[i].energy += self.food_colony[j].energy
@@ -481,7 +507,7 @@ class Life:
 
                                 if self.lamp_colony[i].isAI and training:
                                     print("reproduced")
-                                    self.current_reward += 150
+                                    #self.current_reward += 150
                                 
                                 self.lamp_colony[i].energy *= .5
                                 baby = self.lampSex(self.lamp_colony[i])
@@ -585,7 +611,52 @@ class Life:
         self.episode_reward = 0
         self.episode_steps = 0
         self.done = False
+
+
+    def init_test(self, lamp_types, num_lamps, num_trials, filename):
+        """
+        lamp_types - the lamps here will be one of each species that we will include in the game
+        num_lamps - the number of copies to make of each lamp species
+        num_trials - number of trials to run the simulation for
+        filename - name of stats file that will be used to record data for this particular test
+        """
+
+        ## will want to make use of the init_lamps() funciton here, OR call this instead
+        ## - should create a self.test attribute. When we're testing, this function should get called instead of init_lamps()
+        ## make sure we have a blank lamp colony, then iterate through lamp_types and num_lamps in 2xfor loop to append lamp_colony
+        ## exit those fors, then iteraate through num_trials and run the game, reset, repeat, writing desired informtaion to stats file
+        ## we should change game_loop() to have a testing option (might need to do this for writing funcitons too)
+        ## we need to update file writing
+        ## we should create a separtae txt file for each test (done; created filename)
+
         
+        for i in range(len(lamp_types)): # iterate through
+            for j in range(len(num_lamps)):
+                        
+                    
+                    
+                    max_velo=parent.max_velocity+velo_buff,
+                    length=parent.length+length_buff,
+                    height=parent.height+height_buff,
+                    parent=parent,
+                    canMutate_=parent.canMutate
+                    )#,isAI_=parent.isAI)      
+
+                lamp_j =  lamp(ID=self.lamp_ID,
+                               color=lamp_types[i].color,
+                               max_velo=lamp_types[i].max_velocity,
+                               length=lamp_types[i].length,
+                               height=lamp_types[i].height,
+                               canMutate_=lamp_types[i].canMutate,
+                               isAI_=lamp_types[i].isAI
+                )
+                self.lamp_ID += 1
+                self.lamp_colony.append(lamp_j)
+                if self.RUN_PYGAME:
+                    self.renderLamp(lamp_j)
+
+                        
+
 def main():
 
 
@@ -603,9 +674,9 @@ def main():
     #### MAKE CHANGES IN gameLoop to handle 
     
     ## to play instead of train:
-    # for i in range(10):
-    #     beatGame,foods_eaten = theGameOfLife.gameLoop(training=True, playing=True)
-    #     theGameOfLife.reset()
+#    for i in range(10):
+#        beatGame,foods_eaten = theGameOfLife.gameLoop(training=True, playing=True)
+#        theGameOfLife.reset()
 
     
     try:    
@@ -661,3 +732,4 @@ def main():
     
 if __name__== "__main__":
   main()
+B
