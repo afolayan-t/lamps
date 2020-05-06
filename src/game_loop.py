@@ -1,4 +1,4 @@
-import numpy as np
+iOAmport numpy as np
 from lamp import lamp,Food
 from smart_lamp import DQNLamp
 import time
@@ -52,7 +52,7 @@ model_path = "/Users/ben/Documents/GitRepos/lamps/models/rev15/"
 class Life:
 
     def __init__(self, boxWidth_=1000, boxHeight_=800, numLamps_=40, numFoods_=65, foodResupply_=25, usePygame=False,
-                 lamp_types=None): ## 2nd row is for TESTING
+                 lamp_types=None, playing=False): ## 2nd row is for TESTING
         # Establish size of environment window#
         self.boxWidth = boxWidth_
         self.boxHeight = boxHeight_
@@ -116,7 +116,7 @@ class Life:
         self.episode_reward = 0
         self.episode_steps = 0
         self.training = True
-#        self.testing = True
+        self.playing = playing
         ##############################################################################
 
 
@@ -124,7 +124,7 @@ class Life:
         self.lamp_colony = []
         self.food_colony  = []
         self.init_foods()
-        if self.testing:
+        if self.playing:
             self.init_test()
         else:
             self.init_lamps()
@@ -613,7 +613,7 @@ class Life:
         self.done = False
 
 
-    def init_test(self, lamp_types, num_lamps, num_trials, filename):
+    def init_test(self, lamp_types, num_trials, filename):
         """
         lamp_types - the lamps here will be one of each species that we will include in the game
         num_lamps - the number of copies to make of each lamp species
@@ -621,40 +621,35 @@ class Life:
         filename - name of stats file that will be used to record data for this particular test
         """
 
-        ## will want to make use of the init_lamps() funciton here, OR call this instead
-        ## - should create a self.test attribute. When we're testing, this function should get called instead of init_lamps()
+
+        ## - should create a self.test attribute. When we're testing, this function should get called instead of init_lamps()(need to figure workflow for this)
         ## make sure we have a blank lamp colony, then iterate through lamp_types and num_lamps in 2xfor loop to append lamp_colony
         ## exit those fors, then iteraate through num_trials and run the game, reset, repeat, writing desired informtaion to stats file
         ## we should change game_loop() to have a testing option (might need to do this for writing funcitons too)
         ## we need to update file writing
         ## we should create a separtae txt file for each test (done; created filename)
 
-        
-        for i in range(len(lamp_types)): # iterate through
-            for j in range(len(num_lamps)):
-                        
-                    
-                    
-                    max_velo=parent.max_velocity+velo_buff,
-                    length=parent.length+length_buff,
-                    height=parent.height+height_buff,
-                    parent=parent,
-                    canMutate_=parent.canMutate
-                    )#,isAI_=parent.isAI)      
-
+        num_lamp_types = len(lamp_types)
+        for i in range(len(lamp_types)): # iterate through each type of lamp
+            for j in range(len(self.numLamps/num_lamp_types)): # create numLamps/numTypes lamps for each type
                 lamp_j =  lamp(ID=self.lamp_ID,
                                color=lamp_types[i].color,
                                max_velo=lamp_types[i].max_velocity,
                                length=lamp_types[i].length,
                                height=lamp_types[i].height,
                                canMutate_=lamp_types[i].canMutate,
-                               isAI_=lamp_types[i].isAI
-                )
+                               isAI_=lamp_types[i].isAI)
                 self.lamp_ID += 1
                 self.lamp_colony.append(lamp_j)
                 if self.RUN_PYGAME:
                     self.renderLamp(lamp_j)
 
+                    
+    def test(self, num_iterations):
+        #### iterate thru num_iterations trials and run the test each time
+        for i in range(num_iterations):
+            beatGame,foods_eaten = self.gameLoop(playing=True)
+            theGameOfLife.reset()     
                         
 
 def main():
@@ -732,4 +727,5 @@ def main():
     
 if __name__== "__main__":
   main()
+B
 B
