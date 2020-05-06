@@ -23,10 +23,10 @@ class DQNLamp:
         self.gamma = 0.99
         self.epsilon = 1.0
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.996
-        self.learning_rate = 0.001
-        self.numStateParameters = 5
-        self.actionSpace = [0,1,2,3,4]
+        self.epsilon_decay = 0.9995
+        self.learning_rate = 0.0005
+        self.numStateParameters = 9
+        self.actionSpace = [0,1,2]#,3,4]
         self.model = self.create_model() #### This does the actual predictions
         
         
@@ -35,8 +35,7 @@ class DQNLamp:
         ## there are 4 parameters in our states: energy,x&y velocity,scentMagnitude
         state_shape = (self.numStateParameters,)
         model.add(tf.keras.layers.Dense(150, input_dim=self.numStateParameters, activation="relu"))
-        model.add(tf.keras.layers.Dense(75, activation="relu"))
-        model.add(tf.keras.layers.Dense(100, activation="relu"))
+#        model.add(tf.keras.layers.Dense(50, activation="relu"))
         model.add(tf.keras.layers.Dense(len(self.actionSpace)))
         model.compile(loss="mean_squared_error", optimizer=tf.keras.optimizers.Adam(lr=self.learning_rate))
         return model
@@ -44,7 +43,7 @@ class DQNLamp:
     def remember(self, state, action, reward, new_state, done):
         self.memory.append([state, action, reward, new_state, done])
 
-    def replay(self, batch_size=32):
+    def replay(self, batch_size=1024):
         if len(self.memory) < batch_size:
             return
 
