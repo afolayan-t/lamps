@@ -52,7 +52,7 @@ model_path = "/Users/ben/Documents/GitRepos/lamps/models/rev15/"
 class Life:
 
     def __init__(self, boxWidth_=1000, boxHeight_=800, numLamps_=40, numFoods_=65, foodResupply_=25, usePygame=False,
-                 lamp_types=None, playing=False): ## 2nd row is for TESTING
+                 lampTypes=None, playing=False): ## 2nd row is for TESTING
         # Establish size of environment window#
         self.boxWidth = boxWidth_
         self.boxHeight = boxHeight_
@@ -109,14 +109,16 @@ class Life:
         self.maxFoodsToEat = 20
         self.done = False
         # to play
-#        self.agent = tf.keras.models.load_model(model_path + "episode-30_model_failure.h5")
+#        self.agent1 = tf.keras.models.load_model(model_path + "episode-30_model_failure.h5")
+#        self.agent2 = tf.keras.mo
         # to train
-        self.agent = DQNLamp()
+#        self.agent = DQNLamp()
         self.current_reward = 0
         self.episode_reward = 0
         self.episode_steps = 0
         self.training = True
         self.playing = playing
+        self.lampTypes = lampTypes
         ##############################################################################
 
 
@@ -165,8 +167,9 @@ class Life:
                     length=parent.length+length_buff,
                     height=parent.height+height_buff,
                     parent=parent,
-                    canMutate_=parent.canMutate
-                    )#,isAI_=parent.isAI)    
+                    canMutate_=parent.canMutate,
+                    isAI_=parent.isAI,
+                    agent_=parent.agent)    
         self.lamp_ID += 1
     
         if baby.length <= 0:
@@ -456,9 +459,10 @@ class Life:
         beatGame = False
         
         num_lamps_alive = self.numLamps
-        
-        self.stats_file.write("greens: " + str(self.numLamps/2) + " reds: " + str(self.numLamps/2))
-        self.stats_file.write(" foods: " + str(self.numFoods) + " food regeneration/day: " + str(self.foodResupply)+ "\n\n")
+
+        if not self.playing:
+            self.stats_file.write("greens: " + str(self.numLamps/2) + " reds: " + str(self.numLamps/2))
+            self.stats_file.write(" foods: " + str(self.numFoods) + " food regeneration/day: " + str(self.foodResupply)+ "\n\n")
 
         initial_time = time.time()
         num_iterations = 0
@@ -601,9 +605,12 @@ class Life:
     
         self.lamp_colony = []
         self.food_colony  = []
-        self.init_lamps()
         self.init_foods()
 
+        if self.playing:
+            self.init_test()
+            self.init_lamps()
+        
         self.init_stinkField()
 
 
@@ -613,7 +620,7 @@ class Life:
         self.done = False
 
 
-    def init_test(self, lamp_types, num_trials, filename):
+    def init_test(self):
         """
         lamp_types - the lamps here will be one of each species that we will include in the game
         num_lamps - the number of copies to make of each lamp species
@@ -622,38 +629,76 @@ class Life:
         """
 
 
-        ## - should create a self.test attribute. When we're testing, this function should get called instead of init_lamps()(need to figure workflow for this)
+        ## - should create a self.playing attribute. When we're testing, this function should get called instead of init_lamps()(need to figure workflow for this)
         ## make sure we have a blank lamp colony, then iterate through lamp_types and num_lamps in 2xfor loop to append lamp_colony
         ## exit those fors, then iteraate through num_trials and run the game, reset, repeat, writing desired informtaion to stats file
         ## we should change game_loop() to have a testing option (might need to do this for writing funcitons too)
         ## we need to update file writing
         ## we should create a separtae txt file for each test (done; created filename)
 
-        num_lamp_types = len(lamp_types)
-        for i in range(len(lamp_types)): # iterate through each type of lamp
+        num_lamp_types = len(self.lamp_types)
+        for i in range(len(self.lamp_types)): # iterate through each type of lamp
             for j in range(len(self.numLamps/num_lamp_types)): # create numLamps/numTypes lamps for each type
                 lamp_j =  lamp(ID=self.lamp_ID,
-                               color=lamp_types[i].color,
-                               max_velo=lamp_types[i].max_velocity,
-                               length=lamp_types[i].length,
-                               height=lamp_types[i].height,
-                               canMutate_=lamp_types[i].canMutate,
-                               isAI_=lamp_types[i].isAI)
+                               color=self.lamp_types[i].color,
+                               max_velo=self.lamp_types[i].max_velocity,
+                               length=self.lamp_types[i].length,
+                               height=self.lamp_types[i].height,
+                               canMutate_=self.lamp_types[i].canMutate,
+                               isAI_=self.lamp_types[i].isAI)
                 self.lamp_ID += 1
                 self.lamp_colony.append(lamp_j)
                 if self.RUN_PYGAME:
                     self.renderLamp(lamp_j)
 
                     
-    def test(self, num_iterations):
+    def test(self, lamp_types, num_iterations):
+        #### lamp_types should be a subset of self.lamp_types
         #### iterate thru num_iterations trials and run the test each time
         for i in range(num_iterations):
             beatGame,foods_eaten = self.gameLoop(playing=True)
-            theGameOfLife.reset()     
-                        
+            theGameOfLife.reset()
+        ##### print out the shit here #####
+
+    def test_all(self, num_iterations):
+        print(self.lamp_types)
+        for i in range(len(self.lamp_types)):
+            for j in range(i, len(self.lamp_types)):
+                if i != j:
+                    print(i,j)
+                    lamps_to_test = [self.lamp_types[i], self.lamp_types[j]]
+                    self.test(lamps_to_test, num_iterations)
+        
 
 def main():
 
+
+
+    ##### Flow of what we're gonna do for testing:
+    ## create testing agent
+    # agent1 = tf.keras.models.load_model(model_path + "episode-30_model_failure.h5")
+    # agent2 = tf.keras.mo
+    ##### Create characters 
+    # rando = lamp(identifier_="random")
+    # rando_mutate = lamp(canMutate_=True,identifier_="random_mutates")
+    # ai_1 = lamp(isAI_=True, agent_=theGameOfLife.agent1, identifier_="ai1")
+    # ai_mutate_1 = lamp(isAI_=True, canMutate_=True, agent_=agent1, identifier_="a1_mutates")
+    # ai_2 = lamp(isAI_=True, agent_=theGameOfLife.agent2, identifier_="ai2")
+    # ai_mutate_2 = lamp(isAI_=True, canMutate_=True, agent_=agent2,identifier_="ai2_mutates)
+    # lamp_types = [rando, rando_mutate, ai_1, ai_mutate_1, ai_2, ai_mutate_2
+    ###### 
+    ###### Create game
+    ###### the test groups
+    # num_lamps = 20#(?)
+    # num_iterations = 2000
+    # theGameOfLifeTest = Life(numLamps_=num_lamps, numFoods_=50, foodResupply_=15, playing=True, lampTypes=lamp_types)
+    #############################################
+    # theGameOfLifeTest.test_all(num_iterations)
+    #
+    #
+
+
+    
 
     ####### State information:
     # Energy
@@ -727,5 +772,3 @@ def main():
     
 if __name__== "__main__":
   main()
-B
-B

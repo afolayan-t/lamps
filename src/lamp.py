@@ -32,12 +32,15 @@ class lamp:
     #   scent is what you detect where stink is what you are
 
     def __init__(self, ID=0, parent=None, color=red, x=None, y=None, max_velo=2,
-                 length=15, height=12, canMutate_=False, isAI_=False):
+                 length=15, height=12, canMutate_=False, isAI_=False, agent_=None,
+                 identifier_=""):
 
         ### boolean value corresponding to whether or not the lamp is an AI or not
         ### if isAI is False, it will do random walks
         self.isAI = isAI_
+        self.agent = agent_
         self.canMutate = canMutate_
+        self.identifier = identifier_
         
         self.max_velocity = max_velo
 
